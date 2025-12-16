@@ -1,16 +1,18 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Building2, Mail, Lock, Eye, EyeOff, User, Phone, Building } from 'lucide-react';
+import { Building2, Mail, Lock, Eye, EyeOff, User, Phone, Building, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
+import { useAuth } from '@/hooks/useAuth';
 
 const SignupPage = () => {
   const navigate = useNavigate();
+  const { signUp, user, userRole, loading: authLoading } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [accountType, setAccountType] = useState<'agent' | 'venture'>('agent');
+  const [accountType, setAccountType] = useState<'independent_agent' | 'venture'>('independent_agent');
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -19,16 +21,53 @@ const SignupPage = () => {
     companyName: '',
   });
 
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user && userRole) {
+      if (userRole.role === 'venture_admin') {
+        navigate('/venture-dashboard');
+      } else {
+        navigate('/dashboard');
+      }
+    }
+  }, [user, userRole, navigate]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (formData.password.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
+    }
+
     setIsLoading(true);
     
-    setTimeout(() => {
+    const { error } = await signUp(formData.email, formData.password, {
+      full_name: formData.name,
+      account_type: accountType,
+      venture_name: accountType === 'venture' ? formData.companyName : undefined,
+    });
+
+    if (error) {
+      if (error.message.includes('already registered')) {
+        toast.error('An account with this email already exists');
+      } else {
+        toast.error(error.message || 'Failed to create account');
+      }
       setIsLoading(false);
+    } else {
       toast.success('Account created successfully!');
-      navigate('/dashboard');
-    }, 1000);
+      // Navigation will be handled by useEffect when auth state updates
+    }
   };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="w-8 h-8 animate-spin text-accent" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -77,15 +116,15 @@ const SignupPage = () => {
           <div className="flex gap-3 mb-6">
             <button
               type="button"
-              onClick={() => setAccountType('agent')}
+              onClick={() => setAccountType('independent_agent')}
               className={`flex-1 p-4 rounded-xl border-2 transition-all ${
-                accountType === 'agent'
+                accountType === 'independent_agent'
                   ? 'border-accent bg-accent/5'
                   : 'border-border hover:border-accent/50'
               }`}
             >
-              <User className={`w-6 h-6 mx-auto mb-2 ${accountType === 'agent' ? 'text-accent' : 'text-muted-foreground'}`} />
-              <div className={`text-sm font-medium ${accountType === 'agent' ? 'text-foreground' : 'text-muted-foreground'}`}>
+              <User className={`w-6 h-6 mx-auto mb-2 ${accountType === 'independent_agent' ? 'text-accent' : 'text-muted-foreground'}`} />
+              <div className={`text-sm font-medium ${accountType === 'independent_agent' ? 'text-foreground' : 'text-muted-foreground'}`}>
                 Independent Agent
               </div>
             </button>
@@ -184,6 +223,7 @@ const SignupPage = () => {
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   required
+                  minLength={6}
                 />
                 <button
                   type="button"
@@ -196,7 +236,7 @@ const SignupPage = () => {
             </div>
 
             <Button type="submit" variant="accent" className="w-full h-12" disabled={isLoading}>
-              {isLoading ? 'Creating account...' : 'Create Account'}
+              {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Create Account'}
             </Button>
           </form>
 
