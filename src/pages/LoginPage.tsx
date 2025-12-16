@@ -1,13 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Building2, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { Building2, Mail, Lock, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
+import { useAuth } from '@/hooks/useAuth';
 
 const LoginPage = () => {
   const navigate = useNavigate();
+  const { signIn, user, userRole, loading: authLoading } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -15,17 +17,39 @@ const LoginPage = () => {
     password: '',
   });
 
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user && userRole) {
+      if (userRole.role === 'venture_admin') {
+        navigate('/venture-dashboard');
+      } else {
+        navigate('/dashboard');
+      }
+    }
+  }, [user, userRole, navigate]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
-    // Simulate login
-    setTimeout(() => {
+    const { error } = await signIn(formData.email, formData.password);
+    
+    if (error) {
+      toast.error(error.message || 'Invalid email or password');
       setIsLoading(false);
+    } else {
       toast.success('Welcome back!');
-      navigate('/dashboard');
-    }, 1000);
+      // Navigation will be handled by useEffect
+    }
   };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="w-8 h-8 animate-spin text-accent" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -89,7 +113,7 @@ const LoginPage = () => {
             </div>
 
             <Button type="submit" variant="accent" className="w-full h-12" disabled={isLoading}>
-              {isLoading ? 'Signing in...' : 'Sign In'}
+              {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Sign In'}
             </Button>
           </form>
 

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Building2,
   LayoutDashboard,
@@ -12,26 +12,61 @@ import {
   Bell,
   Search,
   Plus,
+  UserCog,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/hooks/useAuth';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
-const navItems = [
-  { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
-  { icon: Users, label: 'Leads', path: '/leads' },
-  { icon: Calendar, label: 'Calendar', path: '/calendar' },
-  { icon: BarChart3, label: 'Analytics', path: '/analytics' },
-  { icon: Settings, label: 'Settings', path: '/settings' },
-];
-
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { profile, userRole, signOut, isVentureAdmin } = useAuth();
+
+  const agentNavItems = [
+    { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
+    { icon: Users, label: 'Leads', path: '/leads' },
+    { icon: Calendar, label: 'Calendar', path: '/calendar' },
+    { icon: BarChart3, label: 'Analytics', path: '/analytics' },
+    { icon: Settings, label: 'Settings', path: '/settings' },
+  ];
+
+  const ventureNavItems = [
+    { icon: LayoutDashboard, label: 'Dashboard', path: '/venture-dashboard' },
+    { icon: UserCog, label: 'Agents', path: '/venture-dashboard' },
+    { icon: Users, label: 'All Leads', path: '/leads' },
+    { icon: BarChart3, label: 'Analytics', path: '/analytics' },
+    { icon: Settings, label: 'Settings', path: '/settings' },
+  ];
+
+  const navItems = isVentureAdmin ? ventureNavItems : agentNavItems;
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/login');
+  };
+
+  const getInitials = (name: string | null) => {
+    if (!name) return '?';
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  };
+
+  const getRoleLabel = () => {
+    if (!userRole) return '';
+    switch (userRole.role) {
+      case 'venture_admin': return 'Venture Admin';
+      case 'venture_agent': return 'Venture Agent';
+      case 'independent_agent': return 'Independent Agent';
+      case 'super_admin': return 'Super Admin';
+      default: return '';
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -44,7 +79,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       >
         {/* Logo */}
         <div className="h-16 flex items-center justify-between px-4 border-b border-sidebar-border">
-          <Link to="/dashboard" className="flex items-center gap-3">
+          <Link to={isVentureAdmin ? '/venture-dashboard' : '/dashboard'} className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-sidebar-primary flex items-center justify-center flex-shrink-0">
               <Building2 className="w-5 h-5 text-sidebar-primary-foreground" />
             </div>
@@ -62,11 +97,11 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
         {/* Navigation */}
         <nav className="flex-1 p-4 space-y-2">
-          {navItems.map((item) => {
+          {navItems.map((item, index) => {
             const isActive = location.pathname === item.path;
             return (
               <Link
-                key={item.path}
+                key={`${item.path}-${index}`}
                 to={item.path}
                 className={cn(
                   'flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200',
@@ -86,18 +121,23 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         <div className="p-4 border-t border-sidebar-border">
           <div className={cn('flex items-center gap-3', isCollapsed && 'justify-center')}>
             <div className="w-10 h-10 rounded-full bg-sidebar-accent flex items-center justify-center flex-shrink-0">
-              <span className="text-sidebar-foreground font-medium">RS</span>
+              <span className="text-sidebar-foreground font-medium">
+                {getInitials(profile?.full_name)}
+              </span>
             </div>
             {!isCollapsed && (
               <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium text-sidebar-foreground truncate">Rahul Sharma</div>
-                <div className="text-xs text-sidebar-foreground/60">Independent Agent</div>
+                <div className="text-sm font-medium text-sidebar-foreground truncate">
+                  {profile?.full_name || 'User'}
+                </div>
+                <div className="text-xs text-sidebar-foreground/60">{getRoleLabel()}</div>
               </div>
             )}
           </div>
           {!isCollapsed && (
             <Button
               variant="ghost"
+              onClick={handleSignOut}
               className="w-full mt-4 justify-start text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
             >
               <LogOut className="w-4 h-4 mr-3" />
@@ -125,10 +165,12 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               <Bell className="w-5 h-5" />
               <span className="absolute top-1 right-1 w-2 h-2 bg-accent rounded-full" />
             </Button>
-            <Button variant="accent">
-              <Plus className="w-4 h-4 mr-2" />
-              Add Lead
-            </Button>
+            {!isVentureAdmin && (
+              <Button variant="accent">
+                <Plus className="w-4 h-4 mr-2" />
+                Add Lead
+              </Button>
+            )}
           </div>
         </header>
 
