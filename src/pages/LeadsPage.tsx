@@ -2,27 +2,54 @@ import { useState, useMemo } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import LeadCard from '@/components/leads/LeadCard';
 import LeadDetailPanel from '@/components/leads/LeadDetailPanel';
-import { mockLeads } from '@/data/mockData';
-import { Lead, LeadStatus, PropertyType, LeadSource, LEAD_STATUS_CONFIG, PROPERTY_TYPE_LABELS, LEAD_SOURCE_LABELS } from '@/types/lead';
-import { Search, Filter, X, LayoutGrid, List, ChevronDown } from 'lucide-react';
+import AddLeadDialog from '@/components/leads/AddLeadDialog';
+import { useLeads, DbLead } from '@/hooks/useLeads';
+import { LeadStatus, PropertyType, LEAD_STATUS_CONFIG, PROPERTY_TYPE_LABELS, Lead } from '@/types/lead';
+import { Search, X, LayoutGrid, List, ChevronDown, Plus, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 
+// Convert DB lead to frontend Lead type
+const dbLeadToLead = (dbLead: DbLead): Lead => ({
+  id: dbLead.id,
+  name: dbLead.name,
+  phone: dbLead.phone,
+  email: dbLead.email || '',
+  propertyType: dbLead.property_type,
+  budgetMin: Number(dbLead.budget_min) || 0,
+  budgetMax: Number(dbLead.budget_max) || 0,
+  locationPreference: dbLead.location_preference || '',
+  source: dbLead.source,
+  assignedAgentId: dbLead.assigned_agent_id,
+  status: dbLead.status,
+  followUpDate: dbLead.follow_up_date,
+  followUpTime: dbLead.follow_up_time,
+  notes: dbLead.notes || '',
+  tags: dbLead.tags || [],
+  temperature: dbLead.temperature,
+  createdAt: dbLead.created_at,
+  updatedAt: dbLead.updated_at,
+});
+
 const LeadsPage = () => {
-  const [leads] = useState<Lead[]>(mockLeads);
+  const { leads: dbLeads, loading } = useLeads();
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<LeadStatus | 'all'>('all');
   const [propertyFilter, setPropertyFilter] = useState<PropertyType | 'all'>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
+
+  const leads = useMemo(() => dbLeads.map(dbLeadToLead), [dbLeads]);
 
   const filteredLeads = useMemo(() => {
     return leads.filter((lead) => {
       const matchesSearch =
         lead.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         lead.phone.includes(searchQuery) ||
-        lead.email.toLowerCase().includes(searchQuery.toLowerCase());
+        lead.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        lead.id.toLowerCase().includes(searchQuery.toLowerCase());
 
       const matchesStatus = statusFilter === 'all' || lead.status === statusFilter;
       const matchesProperty = propertyFilter === 'all' || lead.propertyType === propertyFilter;
@@ -39,12 +66,28 @@ const LeadsPage = () => {
 
   const hasActiveFilters = searchQuery || statusFilter !== 'all' || propertyFilter !== 'all';
 
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout>
       {/* Page Header */}
-      <div className="mb-6">
-        <h1 className="font-display text-2xl font-bold text-foreground mb-1">All Leads</h1>
-        <p className="text-muted-foreground">Manage and track all your leads in one place.</p>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="font-display text-2xl font-bold text-foreground mb-1">All Leads</h1>
+          <p className="text-muted-foreground">Manage and track all your leads in one place.</p>
+        </div>
+        <Button onClick={() => setAddDialogOpen(true)}>
+          <Plus className="w-4 h-4 mr-2" />
+          Add Lead
+        </Button>
       </div>
 
       {/* Filters */}
@@ -55,7 +98,7 @@ const LeadsPage = () => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               type="text"
-              placeholder="Search by name, phone, or email..."
+              placeholder="Search by name, phone, email, or ID..."
               className="pl-10"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -190,10 +233,19 @@ const LeadsPage = () => {
             <Search className="w-8 h-8 text-muted-foreground" />
           </div>
           <h3 className="font-semibold text-foreground mb-2">No leads found</h3>
-          <p className="text-muted-foreground mb-4">Try adjusting your search or filters</p>
-          <Button variant="outline" onClick={clearFilters}>
-            Clear Filters
-          </Button>
+          <p className="text-muted-foreground mb-4">
+            {leads.length === 0 ? 'Get started by adding your first lead' : 'Try adjusting your search or filters'}
+          </p>
+          {leads.length === 0 ? (
+            <Button onClick={() => setAddDialogOpen(true)}>
+              <Plus className="w-4 h-4 mr-2" />
+              Add Lead
+            </Button>
+          ) : (
+            <Button variant="outline" onClick={clearFilters}>
+              Clear Filters
+            </Button>
+          )}
         </div>
       )}
 
@@ -207,6 +259,9 @@ const LeadsPage = () => {
           <LeadDetailPanel lead={selectedLead} onClose={() => setSelectedLead(null)} />
         </>
       )}
+
+      {/* Add Lead Dialog */}
+      <AddLeadDialog open={addDialogOpen} onOpenChange={setAddDialogOpen} />
     </DashboardLayout>
   );
 };
