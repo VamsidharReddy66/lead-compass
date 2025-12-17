@@ -5,7 +5,6 @@ import {
   LayoutDashboard,
   Users,
   Calendar,
-  BarChart3,
   Settings,
   LogOut,
   ChevronLeft,
@@ -33,7 +32,6 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
     { icon: Users, label: 'Leads', path: '/leads' },
     { icon: Calendar, label: 'Calendar', path: '/calendar' },
-    { icon: BarChart3, label: 'Analytics', path: '/analytics' },
     { icon: Settings, label: 'Settings', path: '/settings' },
   ];
 
@@ -41,7 +39,6 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     { icon: LayoutDashboard, label: 'Dashboard', path: '/venture-dashboard' },
     { icon: UserCog, label: 'Agents', path: '/venture-dashboard' },
     { icon: Users, label: 'All Leads', path: '/leads' },
-    { icon: BarChart3, label: 'Analytics', path: '/analytics' },
     { icon: Settings, label: 'Settings', path: '/settings' },
   ];
 

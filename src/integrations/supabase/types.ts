@@ -14,6 +14,62 @@ export type Database = {
   }
   public: {
     Tables: {
+      meetings: {
+        Row: {
+          agent_id: string
+          created_at: string
+          description: string | null
+          duration_minutes: number | null
+          id: string
+          lead_id: string
+          location: string | null
+          meeting_type: string
+          scheduled_at: string
+          status: string
+          title: string
+          updated_at: string
+          venture_id: string | null
+        }
+        Insert: {
+          agent_id: string
+          created_at?: string
+          description?: string | null
+          duration_minutes?: number | null
+          id?: string
+          lead_id: string
+          location?: string | null
+          meeting_type?: string
+          scheduled_at: string
+          status?: string
+          title: string
+          updated_at?: string
+          venture_id?: string | null
+        }
+        Update: {
+          agent_id?: string
+          created_at?: string
+          description?: string | null
+          duration_minutes?: number | null
+          id?: string
+          lead_id?: string
+          location?: string | null
+          meeting_type?: string
+          scheduled_at?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          venture_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meetings_venture_id_fkey"
+            columns: ["venture_id"]
+            isOneToOne: false
+            referencedRelation: "ventures"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           account_type: Database["public"]["Enums"]["account_type"]
