@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,6 +6,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useMeetings, CreateMeetingInput } from '@/hooks/useMeetings';
+import { useLeads } from '@/hooks/useLeads';
+import { Search, User } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface ScheduleMeetingDialogProps {
   open: boolean;
@@ -23,7 +26,14 @@ const ScheduleMeetingDialog = ({
   defaultDate,
 }: ScheduleMeetingDialogProps) => {
   const { createMeeting } = useMeetings();
+  const { searchLeads } = useLeads();
   const [loading, setLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<Array<{ id: string; name: string; phone: string; email: string | null }>>([]);
+  const [showSearchResults, setShowSearchResults] = useState(false);
+  const [selectedLead, setSelectedLead] = useState<{ id: string; name: string } | null>(
+    leadId && leadName ? { id: leadId, name: leadName } : null
+  );
   
   const defaultDateStr = defaultDate ? defaultDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
   
@@ -35,18 +45,57 @@ const ScheduleMeetingDialog = ({
     time: '10:00',
     duration_minutes: 30,
     location: '',
-    lead_id: leadId || '',
   });
+
+  // Reset form when dialog opens with new lead
+  useEffect(() => {
+    if (open) {
+      setSelectedLead(leadId && leadName ? { id: leadId, name: leadName } : null);
+      setFormData(prev => ({
+        ...prev,
+        title: leadName ? `Follow-up with ${leadName}` : '',
+      }));
+      setSearchQuery('');
+      setSearchResults([]);
+    }
+  }, [open, leadId, leadName]);
+
+  // Search leads when query changes
+  useEffect(() => {
+    const search = async () => {
+      if (searchQuery.length >= 2) {
+        const results = await searchLeads(searchQuery);
+        setSearchResults(results);
+        setShowSearchResults(true);
+      } else {
+        setSearchResults([]);
+        setShowSearchResults(false);
+      }
+    };
+    
+    const debounce = setTimeout(search, 300);
+    return () => clearTimeout(debounce);
+  }, [searchQuery, searchLeads]);
+
+  const handleSelectLead = (lead: { id: string; name: string; phone: string }) => {
+    setSelectedLead({ id: lead.id, name: lead.name });
+    setFormData(prev => ({
+      ...prev,
+      title: prev.title || `Follow-up with ${lead.name}`,
+    }));
+    setSearchQuery('');
+    setShowSearchResults(false);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.lead_id) return;
+    if (!selectedLead) return;
 
     setLoading(true);
     const scheduled_at = new Date(`${formData.date}T${formData.time}`).toISOString();
     
     const input: CreateMeetingInput = {
-      lead_id: formData.lead_id,
+      lead_id: selectedLead.id,
       title: formData.title,
       description: formData.description || undefined,
       meeting_type: formData.meeting_type,
@@ -60,6 +109,7 @@ const ScheduleMeetingDialog = ({
     
     if (result) {
       onOpenChange(false);
+      setSelectedLead(null);
       setFormData({
         title: '',
         description: '',
@@ -68,7 +118,6 @@ const ScheduleMeetingDialog = ({
         time: '10:00',
         duration_minutes: 30,
         location: '',
-        lead_id: '',
       });
     }
   };
@@ -81,6 +130,61 @@ const ScheduleMeetingDialog = ({
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Lead Search */}
+          {!leadId && (
+            <div className="space-y-2">
+              <Label>Select Lead *</Label>
+              {selectedLead ? (
+                <div className="flex items-center justify-between p-3 bg-secondary rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <User className="w-4 h-4 text-muted-foreground" />
+                    <span className="font-medium">{selectedLead.name}</span>
+                    <span className="text-xs text-muted-foreground font-mono">#{selectedLead.id.slice(0, 8)}</span>
+                  </div>
+                  <Button type="button" variant="ghost" size="sm" onClick={() => setSelectedLead(null)}>
+                    Change
+                  </Button>
+                </div>
+              ) : (
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search by ID, name, or phone..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10"
+                  />
+                  {showSearchResults && searchResults.length > 0 && (
+                    <div className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                      {searchResults.map((lead) => (
+                        <button
+                          key={lead.id}
+                          type="button"
+                          onClick={() => handleSelectLead(lead)}
+                          className={cn(
+                            'w-full px-4 py-2 text-left hover:bg-secondary transition-colors',
+                            'flex flex-col gap-0.5'
+                          )}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">{lead.name}</span>
+                            <span className="text-xs text-muted-foreground font-mono">#{lead.id.slice(0, 8)}</span>
+                          </div>
+                          <span className="text-xs text-muted-foreground">{lead.phone}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {showSearchResults && searchResults.length === 0 && searchQuery.length >= 2 && (
+                    <div className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-lg shadow-lg p-4 text-center text-sm text-muted-foreground">
+                      No leads found
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="space-y-2">
             <Label htmlFor="title">Title</Label>
             <Input
@@ -174,24 +278,11 @@ const ScheduleMeetingDialog = ({
             />
           </div>
 
-          {!leadId && (
-            <div className="space-y-2">
-              <Label htmlFor="lead_id">Lead ID</Label>
-              <Input
-                id="lead_id"
-                value={formData.lead_id}
-                onChange={(e) => setFormData(prev => ({ ...prev, lead_id: e.target.value }))}
-                placeholder="Lead ID"
-                required
-              />
-            </div>
-          )}
-
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" disabled={loading || !selectedLead}>
               {loading ? 'Scheduling...' : 'Schedule'}
             </Button>
           </DialogFooter>

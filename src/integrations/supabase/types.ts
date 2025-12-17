@@ -14,6 +14,80 @@ export type Database = {
   }
   public: {
     Tables: {
+      leads: {
+        Row: {
+          assigned_agent_id: string
+          budget_max: number | null
+          budget_min: number | null
+          created_at: string
+          email: string | null
+          follow_up_date: string | null
+          follow_up_time: string | null
+          id: string
+          location_preference: string | null
+          name: string
+          notes: string | null
+          phone: string
+          property_type: Database["public"]["Enums"]["property_type"]
+          source: Database["public"]["Enums"]["lead_source"]
+          status: Database["public"]["Enums"]["lead_status"]
+          tags: string[] | null
+          temperature: Database["public"]["Enums"]["lead_temperature"]
+          updated_at: string
+          venture_id: string | null
+        }
+        Insert: {
+          assigned_agent_id: string
+          budget_max?: number | null
+          budget_min?: number | null
+          created_at?: string
+          email?: string | null
+          follow_up_date?: string | null
+          follow_up_time?: string | null
+          id?: string
+          location_preference?: string | null
+          name: string
+          notes?: string | null
+          phone: string
+          property_type?: Database["public"]["Enums"]["property_type"]
+          source?: Database["public"]["Enums"]["lead_source"]
+          status?: Database["public"]["Enums"]["lead_status"]
+          tags?: string[] | null
+          temperature?: Database["public"]["Enums"]["lead_temperature"]
+          updated_at?: string
+          venture_id?: string | null
+        }
+        Update: {
+          assigned_agent_id?: string
+          budget_max?: number | null
+          budget_min?: number | null
+          created_at?: string
+          email?: string | null
+          follow_up_date?: string | null
+          follow_up_time?: string | null
+          id?: string
+          location_preference?: string | null
+          name?: string
+          notes?: string | null
+          phone?: string
+          property_type?: Database["public"]["Enums"]["property_type"]
+          source?: Database["public"]["Enums"]["lead_source"]
+          status?: Database["public"]["Enums"]["lead_status"]
+          tags?: string[] | null
+          temperature?: Database["public"]["Enums"]["lead_temperature"]
+          updated_at?: string
+          venture_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leads_venture_id_fkey"
+            columns: ["venture_id"]
+            isOneToOne: false
+            referencedRelation: "ventures"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       meetings: {
         Row: {
           agent_id: string
@@ -61,6 +135,13 @@ export type Database = {
           venture_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "meetings_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "meetings_venture_id_fkey"
             columns: ["venture_id"]
@@ -237,6 +318,25 @@ export type Database = {
         | "venture_admin"
         | "venture_agent"
         | "independent_agent"
+      lead_source:
+        | "portal"
+        | "referral"
+        | "walk-in"
+        | "social-media"
+        | "web-form"
+        | "whatsapp"
+        | "facebook"
+        | "other"
+      lead_status:
+        | "new"
+        | "contacted"
+        | "site-visit-scheduled"
+        | "site-visit-completed"
+        | "negotiation"
+        | "closed"
+        | "lost"
+      lead_temperature: "hot" | "warm" | "cold"
+      property_type: "plot" | "flat" | "villa" | "commercial"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -371,6 +471,27 @@ export const Constants = {
         "venture_agent",
         "independent_agent",
       ],
+      lead_source: [
+        "portal",
+        "referral",
+        "walk-in",
+        "social-media",
+        "web-form",
+        "whatsapp",
+        "facebook",
+        "other",
+      ],
+      lead_status: [
+        "new",
+        "contacted",
+        "site-visit-scheduled",
+        "site-visit-completed",
+        "negotiation",
+        "closed",
+        "lost",
+      ],
+      lead_temperature: ["hot", "warm", "cold"],
+      property_type: ["plot", "flat", "villa", "commercial"],
     },
   },
 } as const
