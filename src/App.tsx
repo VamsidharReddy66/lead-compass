@@ -12,7 +12,6 @@ import DashboardPage from "./pages/DashboardPage";
 import VentureDashboardPage from "./pages/VentureDashboardPage";
 import LeadsPage from "./pages/LeadsPage";
 import CalendarPage from "./pages/CalendarPage";
-import AnalyticsPage from "./pages/AnalyticsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -46,11 +45,6 @@ const App = () => (
             <Route path="/calendar" element={
               <ProtectedRoute>
                 <CalendarPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/analytics" element={
-              <ProtectedRoute>
-                <AnalyticsPage />
               </ProtectedRoute>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

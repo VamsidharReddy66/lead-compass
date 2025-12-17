@@ -1,107 +1,218 @@
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import DashboardStats from '@/components/dashboard/DashboardStats';
-import PipelineView from '@/components/leads/PipelineView';
-import LeadDetailPanel from '@/components/leads/LeadDetailPanel';
 import { mockLeads } from '@/data/mockData';
-import { Lead, LeadStatus } from '@/types/lead';
-import { LayoutGrid, List, Filter } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { LEAD_STATUS_CONFIG, LEAD_SOURCE_LABELS, LeadStatus, LeadSource } from '@/types/lead';
+import { TrendingUp, Users, Target, ArrowUpRight, Flame, Calendar, CheckCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const DashboardPage = () => {
-  const [leads, setLeads] = useState<Lead[]>(mockLeads);
-  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
-  const [viewMode, setViewMode] = useState<'pipeline' | 'list'>('pipeline');
+  const leads = mockLeads;
 
   const stats = useMemo(() => {
     const today = new Date().toISOString().split('T')[0];
+    
+    // Status breakdown
+    const statusBreakdown: Record<LeadStatus, number> = {
+      'new': 0,
+      'contacted': 0,
+      'site-visit-scheduled': 0,
+      'site-visit-completed': 0,
+      'negotiation': 0,
+      'closed': 0,
+      'lost': 0,
+    };
+
+    leads.forEach((lead) => {
+      statusBreakdown[lead.status]++;
+    });
+
+    // Source breakdown
+    const sourceBreakdown: Record<string, number> = {};
+    leads.forEach((lead) => {
+      sourceBreakdown[lead.source] = (sourceBreakdown[lead.source] || 0) + 1;
+    });
+
+    // Conversion funnel
+    const totalLeads = leads.length;
+    const contacted = leads.filter((l) =>
+      ['contacted', 'site-visit-scheduled', 'site-visit-completed', 'negotiation', 'closed'].includes(l.status)
+    ).length;
+    const siteVisits = leads.filter((l) =>
+      ['site-visit-completed', 'negotiation', 'closed'].includes(l.status)
+    ).length;
+    const closed = leads.filter((l) => l.status === 'closed').length;
     const hotLeads = leads.filter((l) => l.temperature === 'hot').length;
     const todayFollowUps = leads.filter((l) => l.followUpDate === today).length;
-    const closedDeals = leads.filter((l) => l.status === 'closed').length;
-    const conversionRate = Math.round((closedDeals / leads.length) * 100);
 
     return {
-      totalLeads: leads.length,
+      statusBreakdown,
+      sourceBreakdown,
+      funnel: {
+        total: totalLeads,
+        contacted,
+        siteVisits,
+        closed,
+      },
+      conversionRate: Math.round((closed / totalLeads) * 100),
       hotLeads,
       todayFollowUps,
-      closedDeals,
-      conversionRate,
+      closedDeals: closed,
     };
   }, [leads]);
 
-  const handleLeadStatusChange = (leadId: string, newStatus: LeadStatus) => {
-    setLeads((prev) =>
-      prev.map((lead) =>
-        lead.id === leadId ? { ...lead, status: newStatus, updatedAt: new Date().toISOString() } : lead
-      )
-    );
-  };
+  const funnelSteps = [
+    { label: 'Total Leads', value: stats.funnel.total, percentage: 100 },
+    { label: 'Contacted', value: stats.funnel.contacted, percentage: Math.round((stats.funnel.contacted / stats.funnel.total) * 100) },
+    { label: 'Site Visits', value: stats.funnel.siteVisits, percentage: Math.round((stats.funnel.siteVisits / stats.funnel.total) * 100) },
+    { label: 'Closed', value: stats.funnel.closed, percentage: Math.round((stats.funnel.closed / stats.funnel.total) * 100) },
+  ];
 
   return (
     <DashboardLayout>
       {/* Page Header */}
       <div className="mb-6">
         <h1 className="font-display text-2xl font-bold text-foreground mb-1">Dashboard</h1>
-        <p className="text-muted-foreground">Welcome back! Here's your lead overview.</p>
+        <p className="text-muted-foreground">Track your performance and lead conversion metrics.</p>
       </div>
 
-      {/* Stats */}
-      <DashboardStats {...stats} />
-
-      {/* Pipeline Section */}
-      <div className="mt-8">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="font-display text-xl font-semibold text-foreground">Lead Pipeline</h2>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm">
-              <Filter className="w-4 h-4 mr-2" />
-              Filter
-            </Button>
-            <div className="flex bg-secondary rounded-lg p-1">
-              <button
-                onClick={() => setViewMode('pipeline')}
-                className={cn(
-                  'px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
-                  viewMode === 'pipeline'
-                    ? 'bg-card text-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
-                )}
-              >
-                <LayoutGrid className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={cn(
-                  'px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
-                  viewMode === 'list'
-                    ? 'bg-card text-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
-                )}
-              >
-                <List className="w-4 h-4" />
-              </button>
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+        <div className="bg-card rounded-2xl p-6 shadow-card">
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-12 h-12 rounded-xl bg-status-new/10 flex items-center justify-center">
+              <Users className="w-6 h-6 text-status-new" />
             </div>
+            <div className="flex items-center gap-1 text-sm font-medium text-status-closed">
+              <ArrowUpRight className="w-4 h-4" />
+              12%
+            </div>
+          </div>
+          <div className="font-display text-3xl font-bold text-foreground mb-1">{leads.length}</div>
+          <div className="text-sm text-muted-foreground">Total Leads</div>
+        </div>
+
+        <div className="bg-card rounded-2xl p-6 shadow-card">
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-12 h-12 rounded-xl bg-lead-hot/10 flex items-center justify-center">
+              <Flame className="w-6 h-6 text-lead-hot" />
+            </div>
+            <div className="flex items-center gap-1 text-sm font-medium text-status-closed">
+              <ArrowUpRight className="w-4 h-4" />
+              8%
+            </div>
+          </div>
+          <div className="font-display text-3xl font-bold text-foreground mb-1">{stats.hotLeads}</div>
+          <div className="text-sm text-muted-foreground">Hot Leads</div>
+        </div>
+
+        <div className="bg-card rounded-2xl p-6 shadow-card">
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center">
+              <Calendar className="w-6 h-6 text-accent" />
+            </div>
+          </div>
+          <div className="font-display text-3xl font-bold text-foreground mb-1">{stats.todayFollowUps}</div>
+          <div className="text-sm text-muted-foreground">Today's Follow-ups</div>
+        </div>
+
+        <div className="bg-card rounded-2xl p-6 shadow-card">
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-12 h-12 rounded-xl bg-status-closed/10 flex items-center justify-center">
+              <CheckCircle className="w-6 h-6 text-status-closed" />
+            </div>
+            <div className="flex items-center gap-1 text-sm font-medium text-status-closed">
+              <ArrowUpRight className="w-4 h-4" />
+              15%
+            </div>
+          </div>
+          <div className="font-display text-3xl font-bold text-foreground mb-1">{stats.closedDeals}</div>
+          <div className="text-sm text-muted-foreground">Deals Closed</div>
+        </div>
+
+        <div className="bg-card rounded-2xl p-6 shadow-card">
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center">
+              <TrendingUp className="w-6 h-6 text-accent" />
+            </div>
+            <div className="flex items-center gap-1 text-sm font-medium text-status-closed">
+              <ArrowUpRight className="w-4 h-4" />
+              3%
+            </div>
+          </div>
+          <div className="font-display text-3xl font-bold text-foreground mb-1">
+            {stats.conversionRate}%
+          </div>
+          <div className="text-sm text-muted-foreground">Conversion Rate</div>
+        </div>
+      </div>
+
+      <div className="grid lg:grid-cols-2 gap-6">
+        {/* Conversion Funnel */}
+        <div className="bg-card rounded-2xl p-6 shadow-card">
+          <h3 className="font-display font-semibold text-foreground mb-6">Conversion Funnel</h3>
+          <div className="space-y-4">
+            {funnelSteps.map((step) => (
+              <div key={step.label}>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-foreground">{step.label}</span>
+                  <span className="text-sm text-muted-foreground">
+                    {step.value} ({step.percentage}%)
+                  </span>
+                </div>
+                <div className="h-8 bg-secondary rounded-lg overflow-hidden">
+                  <div
+                    className="h-full bg-accent rounded-lg transition-all duration-500"
+                    style={{ width: `${step.percentage}%` }}
+                  />
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
-        <PipelineView
-          leads={leads}
-          onLeadClick={setSelectedLead}
-          onLeadStatusChange={handleLeadStatusChange}
-        />
-      </div>
+        {/* Lead Status Distribution */}
+        <div className="bg-card rounded-2xl p-6 shadow-card">
+          <h3 className="font-display font-semibold text-foreground mb-6">Lead Status Distribution</h3>
+          <div className="space-y-3">
+            {Object.entries(stats.statusBreakdown).map(([status, count]) => {
+              const config = LEAD_STATUS_CONFIG[status as LeadStatus];
+              const percentage = Math.round((count / leads.length) * 100);
+              return (
+                <div key={status} className="flex items-center gap-3">
+                  <div className={cn('w-3 h-3 rounded-full', config.bgColor.replace('/10', ''))} />
+                  <span className="text-sm text-foreground flex-1">{config.label}</span>
+                  <span className="text-sm font-medium text-foreground">{count}</span>
+                  <span className="text-xs text-muted-foreground w-12 text-right">{percentage}%</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
 
-      {/* Lead Detail Panel */}
-      {selectedLead && (
-        <>
-          <div
-            className="fixed inset-0 bg-foreground/20 backdrop-blur-sm z-40"
-            onClick={() => setSelectedLead(null)}
-          />
-          <LeadDetailPanel lead={selectedLead} onClose={() => setSelectedLead(null)} />
-        </>
-      )}
+        {/* Lead Sources */}
+        <div className="bg-card rounded-2xl p-6 shadow-card lg:col-span-2">
+          <h3 className="font-display font-semibold text-foreground mb-6">Lead Sources</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {Object.entries(stats.sourceBreakdown).map(([source, count]) => {
+              const percentage = Math.round((count / leads.length) * 100);
+              return (
+                <div key={source} className="bg-secondary/50 rounded-xl p-4">
+                  <div className="text-2xl font-bold text-foreground mb-1">{count}</div>
+                  <div className="text-sm text-muted-foreground mb-2">
+                    {LEAD_SOURCE_LABELS[source as LeadSource]}
+                  </div>
+                  <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-accent rounded-full"
+                      style={{ width: `${percentage}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
     </DashboardLayout>
   );
 };
