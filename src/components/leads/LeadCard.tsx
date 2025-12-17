@@ -36,6 +36,7 @@ const LeadCard = ({ lead, onClick, isDragging }: LeadCardProps) => {
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
         <div className="flex-1 min-w-0">
+          <p className="text-[10px] text-muted-foreground/60 font-mono">#{lead.id.slice(0, 8)}</p>
           <div className="flex items-center gap-2">
             <h3 className="font-semibold text-foreground truncate">{lead.name}</h3>
             <TempIcon className={cn('w-4 h-4 flex-shrink-0', temperatureColors[lead.temperature])} />
