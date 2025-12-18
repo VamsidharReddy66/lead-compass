@@ -35,7 +35,7 @@ const AgentPerformanceCard = ({ agent, onUpdate }: AgentPerformanceCardProps) =>
       toast.success(`Agent ${newStatus === 'active' ? 'activated' : 'deactivated'}`);
       onUpdate();
     } catch (error) {
-      console.error('Error updating agent:', error);
+      if (import.meta.env.DEV) console.error('Error updating agent:', error);
       toast.error('Failed to update agent status');
     } finally {
       setUpdating(false);
