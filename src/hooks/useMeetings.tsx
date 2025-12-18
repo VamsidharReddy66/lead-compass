@@ -146,8 +146,14 @@ export const useMeetings = () => {
   };
 
   const getMeetingsForDate = (date: Date) => {
-    const dateStr = date.toISOString().split('T')[0];
-    return meetings.filter(m => m.scheduled_at.split('T')[0] === dateStr);
+    return meetings.filter(m => {
+      const meetingDate = new Date(m.scheduled_at);
+      return (
+        meetingDate.getFullYear() === date.getFullYear() &&
+        meetingDate.getMonth() === date.getMonth() &&
+        meetingDate.getDate() === date.getDate()
+      );
+    });
   };
 
   useEffect(() => {
