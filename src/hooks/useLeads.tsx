@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
@@ -122,13 +122,15 @@ export const useLeads = () => {
     return true;
   };
 
-  const searchLeads = async (query: string) => {
-    if (!user) return [];
+  const searchLeads = useCallback(async (query: string) => {
+    if (!user || !query.trim()) return [];
+    
+    const searchTerm = query.trim().toLowerCase();
     
     const { data, error } = await supabase
       .from('leads')
       .select('id, name, phone, email')
-      .or(`id.ilike.%${query}%,name.ilike.%${query}%,phone.ilike.%${query}%`)
+      .or(`name.ilike.%${searchTerm}%,phone.ilike.%${searchTerm}%`)
       .limit(10);
 
     if (error) {
@@ -137,7 +139,7 @@ export const useLeads = () => {
     }
 
     return data || [];
-  };
+  }, [user]);
 
   useEffect(() => {
     fetchLeads();
