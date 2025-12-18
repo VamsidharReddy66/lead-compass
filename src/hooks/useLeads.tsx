@@ -125,7 +125,15 @@ export const useLeads = () => {
   const searchLeads = useCallback(async (query: string) => {
     if (!user || !query.trim()) return [];
     
-    const searchTerm = query.trim().toLowerCase();
+    // Sanitize input to escape SQL pattern characters
+    const sanitizeForLike = (str: string) => {
+      return str
+        .replace(/\\/g, '\\\\')  // Escape backslashes first
+        .replace(/%/g, '\\%')    // Escape percent signs
+        .replace(/_/g, '\\_');   // Escape underscores
+    };
+    
+    const searchTerm = sanitizeForLike(query.trim().toLowerCase());
     
     const { data, error } = await supabase
       .from('leads')
