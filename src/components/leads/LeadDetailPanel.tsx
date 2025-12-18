@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Lead, LEAD_STATUS_CONFIG, PROPERTY_TYPE_LABELS, LEAD_SOURCE_LABELS } from '@/types/lead';
 import { formatCurrency } from '@/data/mockData';
 import {
@@ -15,6 +16,8 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import ScheduleMeetingDialog from '@/components/calendar/ScheduleMeetingDialog';
+import { useMeetings } from '@/hooks/useMeetings';
 
 interface LeadDetailPanelProps {
   lead: Lead;
@@ -27,8 +30,38 @@ const temperatureColors = {
   cold: 'bg-lead-cold text-white',
 };
 
+const meetingTypeConfig: Record<string, { label: string; color: string; bgColor: string }> = {
+  'follow-up': { label: 'Follow-up', color: 'text-accent', bgColor: 'bg-accent/10' },
+  'site-visit': { label: 'Site Visit', color: 'text-status-new', bgColor: 'bg-status-new/10' },
+  'call': { label: 'Call', color: 'text-status-contacted', bgColor: 'bg-status-contacted/10' },
+  'meeting': { label: 'Meeting', color: 'text-status-negotiation', bgColor: 'bg-status-negotiation/10' },
+};
+
 const LeadDetailPanel = ({ lead, onClose }: LeadDetailPanelProps) => {
   const statusConfig = LEAD_STATUS_CONFIG[lead.status];
+  const [showScheduleDialog, setShowScheduleDialog] = useState(false);
+  const { meetings } = useMeetings();
+
+  // Get meetings for this lead
+  const leadMeetings = meetings
+    .filter(m => m.lead_id === lead.id && m.status === 'scheduled')
+    .sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime());
+
+  const formatTime = (isoString: string) => {
+    return new Date(isoString).toLocaleTimeString('en-US', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      hour12: true 
+    });
+  };
+
+  const formatDate = (isoString: string) => {
+    return new Date(isoString).toLocaleDateString('en-IN', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+    });
+  };
 
   return (
     <div className="fixed inset-y-0 right-0 w-full sm:w-[480px] bg-card shadow-2xl z-50 animate-slide-in-right">
@@ -69,7 +102,12 @@ const LeadDetailPanel = ({ lead, onClose }: LeadDetailPanelProps) => {
             <MessageSquare className="w-4 h-4 mr-2" />
             WhatsApp
           </Button>
-          <Button variant="outline" size="sm" className="flex-1">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="flex-1"
+            onClick={() => setShowScheduleDialog(true)}
+          >
             <CalendarPlus className="w-4 h-4 mr-2" />
             Meeting
           </Button>
@@ -128,6 +166,48 @@ const LeadDetailPanel = ({ lead, onClose }: LeadDetailPanelProps) => {
             </div>
           </div>
         </div>
+
+        {/* Upcoming Meetings */}
+        {leadMeetings.length > 0 && (
+          <div className="bg-accent/10 rounded-xl p-4 space-y-3">
+            <h3 className="font-semibold text-foreground text-sm flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-accent" />
+              Upcoming Meetings ({leadMeetings.length})
+            </h3>
+            <div className="space-y-2">
+              {leadMeetings.slice(0, 3).map((meeting) => {
+                const config = meetingTypeConfig[meeting.meeting_type] || meetingTypeConfig['meeting'];
+                return (
+                  <div key={meeting.id} className="bg-card rounded-lg p-3">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <div className="font-medium text-sm text-foreground">{meeting.title}</div>
+                        <span className={cn('text-xs font-medium px-2 py-0.5 rounded-full', config.color, config.bgColor)}>
+                          {config.label}
+                        </span>
+                      </div>
+                      <div className="text-right text-xs text-muted-foreground">
+                        <div>{formatDate(meeting.scheduled_at)}</div>
+                        <div>{formatTime(meeting.scheduled_at)}</div>
+                      </div>
+                    </div>
+                    {meeting.location && (
+                      <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
+                        <MapPin className="w-3 h-3" />
+                        {meeting.location}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              {leadMeetings.length > 3 && (
+                <div className="text-xs text-muted-foreground text-center">
+                  +{leadMeetings.length - 3} more meetings
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Follow-up */}
         {lead.followUpDate && (
@@ -191,6 +271,13 @@ const LeadDetailPanel = ({ lead, onClose }: LeadDetailPanelProps) => {
           </Button>
         </div>
       </div>
+
+      <ScheduleMeetingDialog
+        open={showScheduleDialog}
+        onOpenChange={setShowScheduleDialog}
+        leadId={lead.id}
+        leadName={lead.name}
+      />
     </div>
   );
 };

@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useMeetings, Meeting } from '@/hooks/useMeetings';
-import { ChevronLeft, ChevronRight, Clock, MapPin, Phone, Plus, Video, Calendar as CalendarIcon } from 'lucide-react';
+import { useLeads } from '@/hooks/useLeads';
+import { ChevronLeft, ChevronRight, Clock, MapPin, Phone, Plus, User, Calendar as CalendarIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import ScheduleMeetingDialog from '@/components/calendar/ScheduleMeetingDialog';
 
-const meetingTypeConfig = {
+const meetingTypeConfig: Record<string, { label: string; color: string; bgColor: string }> = {
   'follow-up': { label: 'Follow-up', color: 'text-accent', bgColor: 'bg-accent/10' },
   'site-visit': { label: 'Site Visit', color: 'text-status-new', bgColor: 'bg-status-new/10' },
   'call': { label: 'Call', color: 'text-status-contacted', bgColor: 'bg-status-contacted/10' },
@@ -18,7 +19,11 @@ const CalendarPage = () => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showScheduleDialog, setShowScheduleDialog] = useState(false);
   
-  const { meetings, loading, getMeetingsForDate } = useMeetings();
+  const { meetings, loading: meetingsLoading, getMeetingsForDate } = useMeetings();
+  const { leads } = useLeads();
+
+  // Create a map for quick lead lookup
+  const leadsMap = new Map(leads.map(lead => [lead.id, lead]));
 
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear();
@@ -141,7 +146,7 @@ const CalendarPage = () => {
                   </div>
                   <div className="space-y-1">
                     {dayMeetings.slice(0, 2).map((meeting) => {
-                      const config = meetingTypeConfig[meeting.meeting_type];
+                      const config = meetingTypeConfig[meeting.meeting_type] || meetingTypeConfig['meeting'];
                       return (
                         <div
                           key={meeting.id}
@@ -177,14 +182,15 @@ const CalendarPage = () => {
               : 'Select a date'}
           </h3>
 
-          {loading ? (
+          {meetingsLoading ? (
             <div className="text-center py-8">
               <p className="text-muted-foreground text-sm">Loading meetings...</p>
             </div>
           ) : selectedDate && selectedDateMeetings.length > 0 ? (
             <div className="space-y-4">
               {selectedDateMeetings.map((meeting) => {
-                const config = meetingTypeConfig[meeting.meeting_type];
+                const config = meetingTypeConfig[meeting.meeting_type] || meetingTypeConfig['meeting'];
+                const lead = leadsMap.get(meeting.lead_id);
                 return (
                   <div
                     key={meeting.id}
@@ -208,6 +214,15 @@ const CalendarPage = () => {
                         {formatTime(meeting.scheduled_at)}
                       </div>
                     </div>
+                    {lead && (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground mt-2 bg-background/50 rounded-lg p-2">
+                        <User className="w-3.5 h-3.5" />
+                        <span className="font-medium text-foreground">{lead.name}</span>
+                        <span className="text-xs">•</span>
+                        <Phone className="w-3 h-3" />
+                        <span className="text-xs">{lead.phone}</span>
+                      </div>
+                    )}
                     {meeting.description && (
                       <p className="text-sm text-muted-foreground mt-2">{meeting.description}</p>
                     )}
