@@ -90,8 +90,8 @@ const AddAgentDialog = ({ open, onOpenChange, onSuccess }: AddAgentDialogProps) 
       onOpenChange(false);
       onSuccess();
     } catch (error: any) {
-      console.error('Error adding agent:', error);
-      toast.error(error.message || 'Failed to add agent');
+      if (import.meta.env.DEV) console.error('Error adding agent:', error);
+      toast.error('Failed to add agent');
     } finally {
       setLoading(false);
     }

@@ -73,7 +73,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (roleError) throw roleError;
       setUserRole(roleData);
     } catch (error) {
-      console.error('Error fetching user data:', error);
+      if (import.meta.env.DEV) console.error('Error fetching user data:', error);
     }
   };
 

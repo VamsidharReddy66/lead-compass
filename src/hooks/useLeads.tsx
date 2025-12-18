@@ -58,7 +58,7 @@ export const useLeads = () => {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching leads:', error);
+      if (import.meta.env.DEV) console.error('Error fetching leads:', error);
       toast.error('Failed to load leads');
     } else {
       setLeads(data || []);
@@ -79,7 +79,7 @@ export const useLeads = () => {
       .single();
 
     if (error) {
-      console.error('Error creating lead:', error);
+      if (import.meta.env.DEV) console.error('Error creating lead:', error);
       toast.error('Failed to create lead');
       return null;
     }
@@ -97,7 +97,7 @@ export const useLeads = () => {
       .single();
 
     if (error) {
-      console.error('Error updating lead:', error);
+      if (import.meta.env.DEV) console.error('Error updating lead:', error);
       toast.error('Failed to update lead');
       return null;
     }
@@ -113,7 +113,7 @@ export const useLeads = () => {
       .eq('id', id);
 
     if (error) {
-      console.error('Error deleting lead:', error);
+      if (import.meta.env.DEV) console.error('Error deleting lead:', error);
       toast.error('Failed to delete lead');
       return false;
     }
@@ -142,7 +142,7 @@ export const useLeads = () => {
       .limit(10);
 
     if (error) {
-      console.error('Error searching leads:', error);
+      if (import.meta.env.DEV) console.error('Error searching leads:', error);
       return [];
     }
 

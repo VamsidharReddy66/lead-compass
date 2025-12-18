@@ -47,7 +47,7 @@ export const useMeetings = () => {
       if (error) throw error;
       setMeetings(data as Meeting[]);
     } catch (error: any) {
-      console.error('Error fetching meetings:', error);
+      if (import.meta.env.DEV) console.error('Error fetching meetings:', error);
       toast({
         title: 'Error',
         description: 'Failed to load meetings',
@@ -81,7 +81,7 @@ export const useMeetings = () => {
       });
       return data as Meeting;
     } catch (error: any) {
-      console.error('Error creating meeting:', error);
+      if (import.meta.env.DEV) console.error('Error creating meeting:', error);
       toast({
         title: 'Error',
         description: 'Failed to schedule meeting',
@@ -109,7 +109,7 @@ export const useMeetings = () => {
       });
       return data as Meeting;
     } catch (error: any) {
-      console.error('Error updating meeting:', error);
+      if (import.meta.env.DEV) console.error('Error updating meeting:', error);
       toast({
         title: 'Error',
         description: 'Failed to update meeting',
@@ -135,7 +135,7 @@ export const useMeetings = () => {
       });
       return true;
     } catch (error: any) {
-      console.error('Error deleting meeting:', error);
+      if (import.meta.env.DEV) console.error('Error deleting meeting:', error);
       toast({
         title: 'Error',
         description: 'Failed to delete meeting',

@@ -55,7 +55,7 @@ export const useVentureAgents = () => {
       
       setAgents(agentsWithProfiles);
     } catch (error) {
-      console.error('Error fetching agents:', error);
+      if (import.meta.env.DEV) console.error('Error fetching agents:', error);
     } finally {
       setLoading(false);
     }
