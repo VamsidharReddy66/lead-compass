@@ -17,11 +17,15 @@ import {
   CheckCircle2,
   XCircle,
   ArrowRight,
+  FileText,
+  Activity,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import ScheduleMeetingDialog from '@/components/calendar/ScheduleMeetingDialog';
-import { useMeetings } from '@/hooks/useMeetings';
+import { useMeetings, Meeting } from '@/hooks/useMeetings';
+import { useActivities } from '@/hooks/useActivities';
+import { Textarea } from '@/components/ui/textarea';
 
 const pipelineStages: LeadStatus[] = [
   'new',
@@ -56,7 +60,10 @@ const LeadDetailPanel = ({ lead, onClose, onStatusChange }: LeadDetailPanelProps
   const statusConfig = LEAD_STATUS_CONFIG[lead.status];
   const [showScheduleDialog, setShowScheduleDialog] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
-  const { meetings } = useMeetings();
+  const [updatingMeetingId, setUpdatingMeetingId] = useState<string | null>(null);
+  const [outcomeNote, setOutcomeNote] = useState('');
+  const { meetings, updateMeeting } = useMeetings();
+  const { activities, createActivity } = useActivities(lead.id);
 
   // Get upcoming meetings for this lead
   const upcomingMeetings = meetings
@@ -81,10 +88,49 @@ const LeadDetailPanel = ({ lead, onClose, onStatusChange }: LeadDetailPanelProps
     }
   };
 
+  const handleMeetingOutcome = async (meeting: Meeting, newStatus: 'completed' | 'cancelled') => {
+    setUpdatingMeetingId(meeting.id);
+    try {
+      const updatedMeeting = await updateMeeting(meeting.id, { 
+        status: newStatus,
+        description: outcomeNote || meeting.description 
+      });
+      
+      if (updatedMeeting) {
+        // Create activity automatically
+        await createActivity({
+          lead_id: lead.id,
+          activity_type: 'meeting-outcome',
+          description: `${meeting.title} marked as ${newStatus}${outcomeNote ? `: ${outcomeNote}` : ''}`,
+          previous_value: 'scheduled',
+          new_value: newStatus,
+          meeting_id: meeting.id,
+        });
+      }
+      setOutcomeNote('');
+      setUpdatingMeetingId(null);
+    } catch {
+      setUpdatingMeetingId(null);
+    }
+  };
+
   const getStatusIcon = (status: string) => {
     if (status === 'completed') return <CheckCircle2 className="w-4 h-4 text-status-closed" />;
     if (status === 'cancelled') return <XCircle className="w-4 h-4 text-status-lost" />;
     return <Calendar className="w-4 h-4 text-muted-foreground" />;
+  };
+
+  const getActivityIcon = (type: string) => {
+    switch (type) {
+      case 'meeting-outcome':
+        return <Calendar className="w-4 h-4 text-accent" />;
+      case 'status-change':
+        return <ArrowRight className="w-4 h-4 text-status-contacted" />;
+      case 'note':
+        return <FileText className="w-4 h-4 text-muted-foreground" />;
+      default:
+        return <Activity className="w-4 h-4 text-muted-foreground" />;
+    }
   };
 
   const formatTime = (isoString: string) => {
@@ -271,11 +317,12 @@ const LeadDetailPanel = ({ lead, onClose, onStatusChange }: LeadDetailPanelProps
               <Calendar className="w-4 h-4 text-accent" />
               Upcoming Meetings ({upcomingMeetings.length})
             </h3>
-            <div className="space-y-2">
+            <div className="space-y-3">
               {upcomingMeetings.slice(0, 3).map((meeting) => {
                 const config = meetingTypeConfig[meeting.meeting_type] || meetingTypeConfig['meeting'];
+                const isUpdating = updatingMeetingId === meeting.id;
                 return (
-                  <div key={meeting.id} className="bg-card rounded-lg p-3">
+                  <div key={meeting.id} className="bg-card rounded-lg p-3 space-y-3">
                     <div className="flex items-start justify-between">
                       <div>
                         <div className="font-medium text-sm text-foreground">{meeting.title}</div>
@@ -289,11 +336,43 @@ const LeadDetailPanel = ({ lead, onClose, onStatusChange }: LeadDetailPanelProps
                       </div>
                     </div>
                     {meeting.location && (
-                      <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
                         <MapPin className="w-3 h-3" />
                         {meeting.location}
                       </div>
                     )}
+                    {/* Outcome update section */}
+                    <div className="pt-2 border-t border-border space-y-2">
+                      <Textarea
+                        placeholder="Add outcome notes (optional)..."
+                        value={isUpdating ? outcomeNote : ''}
+                        onChange={(e) => setOutcomeNote(e.target.value)}
+                        className="text-xs min-h-[60px]"
+                        disabled={isUpdating && updatingMeetingId !== meeting.id}
+                      />
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="flex-1 text-xs text-status-closed hover:bg-status-closed/10"
+                          onClick={() => handleMeetingOutcome(meeting, 'completed')}
+                          disabled={isUpdating}
+                        >
+                          <CheckCircle2 className="w-3 h-3 mr-1" />
+                          {isUpdating && updatingMeetingId === meeting.id ? 'Saving...' : 'Completed'}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="flex-1 text-xs text-status-lost hover:bg-status-lost/10"
+                          onClick={() => handleMeetingOutcome(meeting, 'cancelled')}
+                          disabled={isUpdating}
+                        >
+                          <XCircle className="w-3 h-3 mr-1" />
+                          Cancelled
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 );
               })}
@@ -307,57 +386,85 @@ const LeadDetailPanel = ({ lead, onClose, onStatusChange }: LeadDetailPanelProps
         )}
 
         {/* Activity History */}
-        {pastMeetings.length > 0 && (
-          <div className="bg-secondary/50 rounded-xl p-4 space-y-3">
-            <h3 className="font-semibold text-foreground text-sm flex items-center gap-2">
-              <History className="w-4 h-4 text-muted-foreground" />
-              Activity History ({pastMeetings.length})
-            </h3>
-            <div className="space-y-2">
-              {pastMeetings.slice(0, 5).map((meeting) => {
-                const config = meetingTypeConfig[meeting.meeting_type] || meetingTypeConfig['meeting'];
-                return (
-                  <div key={meeting.id} className="bg-card rounded-lg p-3 border-l-2 border-muted">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-start gap-2">
-                        {getStatusIcon(meeting.status)}
-                        <div>
-                          <div className="font-medium text-sm text-foreground">{meeting.title}</div>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className={cn('text-xs font-medium px-2 py-0.5 rounded-full', config.color, config.bgColor)}>
-                              {config.label}
-                            </span>
-                            <span className={cn(
-                              'text-xs font-medium px-2 py-0.5 rounded-full capitalize',
-                              meeting.status === 'completed' && 'bg-status-closed/10 text-status-closed',
-                              meeting.status === 'cancelled' && 'bg-status-lost/10 text-status-lost',
-                              meeting.status !== 'completed' && meeting.status !== 'cancelled' && 'bg-muted text-muted-foreground'
-                            )}>
-                              {meeting.status}
-                            </span>
-                          </div>
-                        </div>
+        <div className="bg-secondary/50 rounded-xl p-4 space-y-3">
+          <h3 className="font-semibold text-foreground text-sm flex items-center gap-2">
+            <History className="w-4 h-4 text-muted-foreground" />
+            Activity History ({activities.length + pastMeetings.length})
+          </h3>
+          <div className="space-y-2">
+            {/* Show activities from database */}
+            {activities.slice(0, 5).map((activity) => (
+              <div key={activity.id} className="bg-card rounded-lg p-3 border-l-2 border-accent">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start gap-2">
+                    {getActivityIcon(activity.activity_type)}
+                    <div>
+                      <div className="font-medium text-sm text-foreground capitalize">
+                        {activity.activity_type.replace('-', ' ')}
                       </div>
-                      <div className="text-right text-xs text-muted-foreground">
-                        <div>{formatDate(meeting.scheduled_at)}</div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {activity.description}
                       </div>
                     </div>
-                    {meeting.description && (
-                      <div className="mt-2 text-xs text-muted-foreground pl-6">
-                        {meeting.description}
-                      </div>
-                    )}
                   </div>
-                );
-              })}
-              {pastMeetings.length > 5 && (
-                <div className="text-xs text-muted-foreground text-center">
-                  +{pastMeetings.length - 5} more activities
+                  <div className="text-right text-xs text-muted-foreground">
+                    {formatDate(activity.created_at)}
+                  </div>
                 </div>
-              )}
-            </div>
+              </div>
+            ))}
+            
+            {/* Show past meetings as activities */}
+            {pastMeetings.slice(0, 5 - activities.length).map((meeting) => {
+              const config = meetingTypeConfig[meeting.meeting_type] || meetingTypeConfig['meeting'];
+              return (
+                <div key={meeting.id} className="bg-card rounded-lg p-3 border-l-2 border-muted">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-start gap-2">
+                      {getStatusIcon(meeting.status)}
+                      <div>
+                        <div className="font-medium text-sm text-foreground">{meeting.title}</div>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className={cn('text-xs font-medium px-2 py-0.5 rounded-full', config.color, config.bgColor)}>
+                            {config.label}
+                          </span>
+                          <span className={cn(
+                            'text-xs font-medium px-2 py-0.5 rounded-full capitalize',
+                            meeting.status === 'completed' && 'bg-status-closed/10 text-status-closed',
+                            meeting.status === 'cancelled' && 'bg-status-lost/10 text-status-lost',
+                            meeting.status !== 'completed' && meeting.status !== 'cancelled' && 'bg-muted text-muted-foreground'
+                          )}>
+                            {meeting.status}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right text-xs text-muted-foreground">
+                      <div>{formatDate(meeting.scheduled_at)}</div>
+                    </div>
+                  </div>
+                  {meeting.description && (
+                    <div className="mt-2 text-xs text-muted-foreground pl-6">
+                      {meeting.description}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            
+            {activities.length === 0 && pastMeetings.length === 0 && (
+              <div className="text-xs text-muted-foreground text-center py-4">
+                No activity history yet
+              </div>
+            )}
+            
+            {(activities.length + pastMeetings.length) > 5 && (
+              <div className="text-xs text-muted-foreground text-center">
+                +{(activities.length + pastMeetings.length) - 5} more activities
+              </div>
+            )}
           </div>
-        )}
+        </div>
 
         {/* Follow-up */}
         {lead.followUpDate && (
