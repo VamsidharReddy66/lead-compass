@@ -14,6 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      activities: {
+        Row: {
+          activity_type: string
+          agent_id: string
+          created_at: string
+          description: string
+          id: string
+          lead_id: string
+          meeting_id: string | null
+          new_value: string | null
+          previous_value: string | null
+        }
+        Insert: {
+          activity_type?: string
+          agent_id: string
+          created_at?: string
+          description: string
+          id?: string
+          lead_id: string
+          meeting_id?: string | null
+          new_value?: string | null
+          previous_value?: string | null
+        }
+        Update: {
+          activity_type?: string
+          agent_id?: string
+          created_at?: string
+          description?: string
+          id?: string
+          lead_id?: string
+          meeting_id?: string | null
+          new_value?: string | null
+          previous_value?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activities_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activities_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leads: {
         Row: {
           assigned_agent_id: string
