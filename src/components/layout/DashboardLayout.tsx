@@ -12,6 +12,7 @@ import {
   Search,
   Plus,
   UserCog,
+  GitBranch,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,6 +32,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const agentNavItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
     { icon: Users, label: 'Leads', path: '/leads' },
+    { icon: GitBranch, label: 'Pipeline', path: '/pipeline' },
     { icon: Calendar, label: 'Calendar', path: '/calendar' },
     { icon: Settings, label: 'Settings', path: '/settings' },
   ];
@@ -39,6 +41,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     { icon: LayoutDashboard, label: 'Dashboard', path: '/venture-dashboard' },
     { icon: UserCog, label: 'Agents', path: '/venture-dashboard' },
     { icon: Users, label: 'All Leads', path: '/leads' },
+    { icon: GitBranch, label: 'Pipeline', path: '/pipeline' },
     { icon: Settings, label: 'Settings', path: '/settings' },
   ];
 
