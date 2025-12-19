@@ -259,7 +259,10 @@ export const getLeadsByStatus = (leads: Lead[]) => {
   return grouped;
 };
 
-export const formatCurrency = (amount: number): string => {
+export const formatCurrency = (amount: number | undefined | null): string => {
+  if (amount === undefined || amount === null) {
+    return 'N/A';
+  }
   if (amount >= 10000000) {
     return `₹${(amount / 10000000).toFixed(1)}Cr`;
   } else if (amount >= 100000) {
