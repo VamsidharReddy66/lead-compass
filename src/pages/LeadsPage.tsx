@@ -33,7 +33,7 @@ const dbLeadToLead = (dbLead: DbLead): Lead => ({
 });
 
 const LeadsPage = () => {
-  const { leads: dbLeads, loading } = useLeads();
+  const { leads: dbLeads, loading, updateLead } = useLeads();
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<LeadStatus | 'all'>('all');
@@ -62,6 +62,14 @@ const LeadsPage = () => {
     setSearchQuery('');
     setStatusFilter('all');
     setPropertyFilter('all');
+  };
+
+  const handleStatusChange = async (leadId: string, newStatus: LeadStatus) => {
+    await updateLead(leadId, { status: newStatus });
+    // Update selected lead with new status
+    if (selectedLead && selectedLead.id === leadId) {
+      setSelectedLead({ ...selectedLead, status: newStatus });
+    }
   };
 
   const hasActiveFilters = searchQuery || statusFilter !== 'all' || propertyFilter !== 'all';
@@ -256,7 +264,11 @@ const LeadsPage = () => {
             className="fixed inset-0 bg-foreground/20 backdrop-blur-sm z-40"
             onClick={() => setSelectedLead(null)}
           />
-          <LeadDetailPanel lead={selectedLead} onClose={() => setSelectedLead(null)} />
+          <LeadDetailPanel 
+            lead={selectedLead} 
+            onClose={() => setSelectedLead(null)} 
+            onStatusChange={handleStatusChange}
+          />
         </>
       )}
 

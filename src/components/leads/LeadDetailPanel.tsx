@@ -36,6 +36,7 @@ const pipelineStages: LeadStatus[] = [
 interface LeadDetailPanelProps {
   lead: Lead;
   onClose: () => void;
+  onStatusChange?: (leadId: string, newStatus: LeadStatus) => void;
 }
 
 const temperatureColors = {
@@ -51,9 +52,10 @@ const meetingTypeConfig: Record<string, { label: string; color: string; bgColor:
   'meeting': { label: 'Meeting', color: 'text-status-negotiation', bgColor: 'bg-status-negotiation/10' },
 };
 
-const LeadDetailPanel = ({ lead, onClose }: LeadDetailPanelProps) => {
+const LeadDetailPanel = ({ lead, onClose, onStatusChange }: LeadDetailPanelProps) => {
   const statusConfig = LEAD_STATUS_CONFIG[lead.status];
   const [showScheduleDialog, setShowScheduleDialog] = useState(false);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const { meetings } = useMeetings();
 
   // Get upcoming meetings for this lead
@@ -68,6 +70,16 @@ const LeadDetailPanel = ({ lead, onClose }: LeadDetailPanelProps) => {
 
   // Get current stage index for pipeline
   const currentStageIndex = pipelineStages.indexOf(lead.status);
+
+  const handleStatusClick = async (newStatus: LeadStatus) => {
+    if (newStatus === lead.status || !onStatusChange) return;
+    setIsUpdatingStatus(true);
+    try {
+      await onStatusChange(lead.id, newStatus);
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
 
   const getStatusIcon = (status: string) => {
     if (status === 'completed') return <CheckCircle2 className="w-4 h-4 text-status-closed" />;
@@ -125,6 +137,7 @@ const LeadDetailPanel = ({ lead, onClose }: LeadDetailPanelProps) => {
           <h3 className="font-semibold text-foreground text-sm flex items-center gap-2">
             <ArrowRight className="w-4 h-4 text-accent" />
             Lead Lifecycle
+            {onStatusChange && <span className="text-xs text-muted-foreground font-normal">(click to update)</span>}
           </h3>
           <div className="flex items-center gap-1 overflow-x-auto pb-2">
             {pipelineStages.filter(s => s !== 'lost').map((stage, index) => {
@@ -132,20 +145,25 @@ const LeadDetailPanel = ({ lead, onClose }: LeadDetailPanelProps) => {
               const isActive = stage === lead.status;
               const isPast = currentStageIndex > index || (lead.status === 'lost' && index === 0);
               const isLost = lead.status === 'lost';
+              const canClick = onStatusChange && !isUpdatingStatus;
               
               return (
                 <div key={stage} className="flex items-center">
-                  <div 
+                  <button 
+                    onClick={() => canClick && handleStatusClick(stage)}
+                    disabled={!canClick || isActive}
                     className={cn(
                       'flex-shrink-0 px-2 py-1 rounded text-xs font-medium transition-all',
                       isActive && !isLost && 'bg-accent text-accent-foreground',
                       isPast && !isActive && 'bg-status-closed/20 text-status-closed',
                       !isActive && !isPast && 'bg-muted text-muted-foreground',
-                      isLost && isActive && 'bg-status-lost/20 text-status-lost'
+                      isLost && isActive && 'bg-status-lost/20 text-status-lost',
+                      canClick && !isActive && 'hover:ring-2 hover:ring-accent/50 cursor-pointer',
+                      (!canClick || isActive) && 'cursor-default'
                     )}
                   >
                     {stageConfig.label.split(' ')[0]}
-                  </div>
+                  </button>
                   {index < pipelineStages.filter(s => s !== 'lost').length - 1 && (
                     <ArrowRight className={cn(
                       'w-3 h-3 mx-1 flex-shrink-0',
@@ -156,6 +174,16 @@ const LeadDetailPanel = ({ lead, onClose }: LeadDetailPanelProps) => {
               );
             })}
           </div>
+          {/* Mark as Lost button */}
+          {onStatusChange && lead.status !== 'lost' && lead.status !== 'closed' && (
+            <button
+              onClick={() => handleStatusClick('lost')}
+              disabled={isUpdatingStatus}
+              className="text-xs text-status-lost hover:text-status-lost/80 font-medium transition-colors"
+            >
+              Mark as Lost
+            </button>
+          )}
           {lead.status === 'lost' && (
             <div className="text-xs text-status-lost font-medium">Lead marked as lost</div>
           )}
