@@ -162,16 +162,20 @@ const TasksMeetingsWidget = () => {
   const goToNextDay = () => setSelectedDate((prev) => addDays(prev, 1));
   const goToToday = () => setSelectedDate(new Date());
 
-  // Dynamic filter counts based on type-filtered meetings
+  // Dynamic filter counts based on selected date
   const filterCounts = useMemo(() => {
     const now = new Date();
+    // First filter by the selected date
+    const dateMeetings = typeFilteredMeetings.filter((m) =>
+      isSameDay(new Date(m.scheduled_at), dueDateFilter)
+    );
     return {
-      all: typeFilteredMeetings.length,
-      open: typeFilteredMeetings.filter((m) => m.status === 'scheduled' && new Date(m.scheduled_at) >= now).length,
-      overdue: typeFilteredMeetings.filter((m) => m.status === 'scheduled' && new Date(m.scheduled_at) < now).length,
-      completed: typeFilteredMeetings.filter((m) => m.status === 'completed').length,
+      all: dateMeetings.length,
+      open: dateMeetings.filter((m) => m.status === 'scheduled' && new Date(m.scheduled_at) >= now).length,
+      overdue: dateMeetings.filter((m) => m.status === 'scheduled' && new Date(m.scheduled_at) < now).length,
+      completed: dateMeetings.filter((m) => m.status === 'completed').length,
     };
-  }, [typeFilteredMeetings]);
+  }, [typeFilteredMeetings, dueDateFilter]);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 mb-8">
