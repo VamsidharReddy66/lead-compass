@@ -283,7 +283,8 @@ export type Database = {
       }
       venture_agents: {
         Row: {
-          agent_id: string
+          agent_id: string | null
+          email: string | null
           id: string
           invited_at: string
           joined_at: string | null
@@ -291,7 +292,8 @@ export type Database = {
           venture_id: string
         }
         Insert: {
-          agent_id: string
+          agent_id?: string | null
+          email?: string | null
           id?: string
           invited_at?: string
           joined_at?: string | null
@@ -299,7 +301,8 @@ export type Database = {
           venture_id: string
         }
         Update: {
-          agent_id?: string
+          agent_id?: string | null
+          email?: string | null
           id?: string
           invited_at?: string
           joined_at?: string | null

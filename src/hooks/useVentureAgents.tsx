@@ -4,9 +4,10 @@ import { useAuth } from './useAuth';
 
 export interface VentureAgent {
   id: string;
-  agent_id: string;
+  agent_id: string | null;
   venture_id: string;
   status: string;
+  email: string | null;
   invited_at: string;
   joined_at: string | null;
   profile?: {
@@ -37,18 +38,25 @@ export const useVentureAgents = () => {
 
       if (agentsError) throw agentsError;
 
-      // Fetch profiles for each agent
+      // Fetch profiles for each agent that has an agent_id
       const agentsWithProfiles = await Promise.all(
         (agentsData || []).map(async (agent) => {
-          const { data: profileData } = await supabase
-            .from('profiles')
-            .select('email, full_name, phone, avatar_url')
-            .eq('id', agent.agent_id)
-            .maybeSingle();
+          if (agent.agent_id) {
+            const { data: profileData } = await supabase
+              .from('profiles')
+              .select('email, full_name, phone, avatar_url')
+              .eq('id', agent.agent_id)
+              .maybeSingle();
 
+            return {
+              ...agent,
+              profile: profileData || undefined
+            };
+          }
+          // For pending invitations, return agent with email from the record
           return {
             ...agent,
-            profile: profileData || undefined
+            profile: agent.email ? { email: agent.email, full_name: null, phone: null, avatar_url: null } : undefined
           };
         })
       );
