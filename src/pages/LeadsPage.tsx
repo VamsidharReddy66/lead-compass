@@ -18,10 +18,12 @@ import {
   ChevronDown,
   Plus,
   Loader2,
+  Copy,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+import DuplicateLeadsDialog from '@/components/leads/DuplicateLeadsDialog';
 
 /* --------------------------------
    DB Lead → UI Lead
@@ -68,6 +70,7 @@ const LeadsPage = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   const [leadDialogOpen, setLeadDialogOpen] = useState(false);
+  const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState<'add' | 'edit'>('add');
   const [editLeadData, setEditLeadData] =
     useState<CreateLeadInput | null>(null);
@@ -160,16 +163,25 @@ const LeadsPage = () => {
             Manage and track all your leads in one place.
           </p>
         </div>
-        <Button
-          onClick={() => {
-            setDialogMode('add');
-            setEditLeadData(null);
-            setLeadDialogOpen(true);
-          }}
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Add Lead
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => setDuplicateDialogOpen(true)}
+          >
+            <Copy className="w-4 h-4 mr-2" />
+            Find Duplicates
+          </Button>
+          <Button
+            onClick={() => {
+              setDialogMode('add');
+              setEditLeadData(null);
+              setLeadDialogOpen(true);
+            }}
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add Lead
+          </Button>
+        </div>
       </div>
 
       {/* FILTERS */}
@@ -287,6 +299,14 @@ const LeadsPage = () => {
         mode={dialogMode}
         initialData={editLeadData || undefined}
         onUpdate={handleUpdateLead}
+      />
+
+      {/* DUPLICATE LEADS */}
+      <DuplicateLeadsDialog
+        open={duplicateDialogOpen}
+        onOpenChange={setDuplicateDialogOpen}
+        leads={leads}
+        onLeadClick={setSelectedLead}
       />
     </DashboardLayout>
   );
