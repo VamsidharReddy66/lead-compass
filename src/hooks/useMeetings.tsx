@@ -7,7 +7,6 @@ export interface Meeting {
   id: string;
   lead_id: string;
   agent_id: string;
-  venture_id: string | null;
   title: string;
   description: string | null;
   meeting_type: 'follow-up' | 'site-visit' | 'call' | 'meeting';
@@ -32,12 +31,12 @@ export interface CreateMeetingInput {
 export const useMeetings = () => {
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [loading, setLoading] = useState(true);
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
   const { toast } = useToast();
 
   const fetchMeetings = async () => {
     if (!user) return;
-    
+
     try {
       const { data, error } = await supabase
         .from('meetings')
@@ -46,8 +45,8 @@ export const useMeetings = () => {
 
       if (error) throw error;
       setMeetings(data as Meeting[]);
-    } catch (error: any) {
-      if (import.meta.env.DEV) console.error('Error fetching meetings:', error);
+    } catch (error) {
+      console.error('Error fetching meetings:', error);
       toast({
         title: 'Error',
         description: 'Failed to load meetings',
@@ -66,22 +65,22 @@ export const useMeetings = () => {
         .from('meetings')
         .insert({
           ...input,
-          agent_id: user.id,
-          venture_id: profile?.venture_id || null,
+          agent_id: user.id, // ✅ ONLY VALID EXTRA FIELD
         })
         .select()
         .single();
 
       if (error) throw error;
 
-      setMeetings(prev => [...prev, data as Meeting]);
+      setMeetings((prev) => [...prev, data as Meeting]);
       toast({
         title: 'Meeting scheduled',
-        description: 'Your meeting has been scheduled successfully',
+        description: 'Meeting scheduled successfully',
       });
+
       return data as Meeting;
-    } catch (error: any) {
-      if (import.meta.env.DEV) console.error('Error creating meeting:', error);
+    } catch (error) {
+      console.error('Error creating meeting:', error);
       toast({
         title: 'Error',
         description: 'Failed to schedule meeting',
@@ -91,67 +90,13 @@ export const useMeetings = () => {
     }
   };
 
-  const updateMeeting = async (id: string, updates: Partial<Meeting>) => {
-    try {
-      const { data, error } = await supabase
-        .from('meetings')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      setMeetings(prev => prev.map(m => m.id === id ? data as Meeting : m));
-      toast({
-        title: 'Meeting updated',
-        description: 'Your meeting has been updated',
-      });
-      return data as Meeting;
-    } catch (error: any) {
-      if (import.meta.env.DEV) console.error('Error updating meeting:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to update meeting',
-        variant: 'destructive',
-      });
-      return null;
-    }
-  };
-
-  const deleteMeeting = async (id: string) => {
-    try {
-      const { error } = await supabase
-        .from('meetings')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-
-      setMeetings(prev => prev.filter(m => m.id !== id));
-      toast({
-        title: 'Meeting deleted',
-        description: 'Your meeting has been removed',
-      });
-      return true;
-    } catch (error: any) {
-      if (import.meta.env.DEV) console.error('Error deleting meeting:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to delete meeting',
-        variant: 'destructive',
-      });
-      return false;
-    }
-  };
-
   const getMeetingsForDate = (date: Date) => {
-    return meetings.filter(m => {
-      const meetingDate = new Date(m.scheduled_at);
+    return meetings.filter((m) => {
+      const d = new Date(m.scheduled_at);
       return (
-        meetingDate.getFullYear() === date.getFullYear() &&
-        meetingDate.getMonth() === date.getMonth() &&
-        meetingDate.getDate() === date.getDate()
+        d.getFullYear() === date.getFullYear() &&
+        d.getMonth() === date.getMonth() &&
+        d.getDate() === date.getDate()
       );
     });
   };
@@ -160,32 +105,10 @@ export const useMeetings = () => {
     fetchMeetings();
   }, [user]);
 
-  // Subscribe to realtime updates
-  useEffect(() => {
-    if (!user) return;
-
-    const channel = supabase
-      .channel('meetings-changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'meetings' },
-        () => {
-          fetchMeetings();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user]);
-
   return {
     meetings,
     loading,
     createMeeting,
-    updateMeeting,
-    deleteMeeting,
     getMeetingsForDate,
     refetch: fetchMeetings,
   };
