@@ -1,10 +1,17 @@
 import { useState, useMemo } from 'react';
-import { format, addDays, subDays, isToday, isSameDay, startOfDay } from 'date-fns';
+import { format, addDays, subDays, isToday, isSameDay } from 'date-fns';
 import { useMeetings, Meeting } from '@/hooks/useMeetings';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { 
   CheckSquare, 
   Calendar as CalendarIcon, 
@@ -12,12 +19,14 @@ import {
   ChevronLeft, 
   ChevronRight,
   Settings,
-  Video
+  Video,
+  Filter
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type FilterType = 'all' | 'open' | 'overdue' | 'completed';
 type ViewType = 'tasks' | 'meetings';
+type MeetingType = 'all' | 'site-visit' | 'follow-up' | 'negotiation' | 'closing';
 
 interface TimeSlot {
   hour: number;
@@ -25,10 +34,19 @@ interface TimeSlot {
   meetings: Meeting[];
 }
 
+const MEETING_TYPES: { value: MeetingType; label: string }[] = [
+  { value: 'all', label: 'All Types' },
+  { value: 'site-visit', label: 'Site Visit' },
+  { value: 'follow-up', label: 'Follow-up' },
+  { value: 'negotiation', label: 'Negotiation' },
+  { value: 'closing', label: 'Closing' },
+];
+
 const TasksMeetingsWidget = () => {
   const { meetings, loading } = useMeetings();
   const [selectedViews, setSelectedViews] = useState<ViewType[]>(['tasks', 'meetings']);
   const [filter, setFilter] = useState<FilterType>('all');
+  const [meetingTypeFilter, setMeetingTypeFilter] = useState<MeetingType>('all');
   const [selectedDate, setSelectedDate] = useState(new Date());
 
   const toggleView = (view: ViewType) => {
@@ -37,9 +55,16 @@ const TasksMeetingsWidget = () => {
     );
   };
 
+  // Filter by meeting type first
+  const typeFilteredMeetings = useMemo(() => {
+    if (meetingTypeFilter === 'all') return meetings;
+    return meetings.filter((m) => m.meeting_type === meetingTypeFilter);
+  }, [meetings, meetingTypeFilter]);
+
+  // Then filter by status
   const filteredMeetings = useMemo(() => {
     const now = new Date();
-    return meetings.filter((meeting) => {
+    return typeFilteredMeetings.filter((meeting) => {
       const meetingDate = new Date(meeting.scheduled_at);
       switch (filter) {
         case 'open':
@@ -52,7 +77,7 @@ const TasksMeetingsWidget = () => {
           return true;
       }
     });
-  }, [meetings, filter]);
+  }, [typeFilteredMeetings, filter]);
 
   const todayMeetings = useMemo(() => {
     return filteredMeetings.filter((m) =>
@@ -77,15 +102,16 @@ const TasksMeetingsWidget = () => {
   const goToNextDay = () => setSelectedDate((prev) => addDays(prev, 1));
   const goToToday = () => setSelectedDate(new Date());
 
+  // Dynamic filter counts based on type-filtered meetings
   const filterCounts = useMemo(() => {
     const now = new Date();
     return {
-      all: meetings.length,
-      open: meetings.filter((m) => m.status === 'scheduled' && new Date(m.scheduled_at) >= now).length,
-      overdue: meetings.filter((m) => m.status === 'scheduled' && new Date(m.scheduled_at) < now).length,
-      completed: meetings.filter((m) => m.status === 'completed').length,
+      all: typeFilteredMeetings.length,
+      open: typeFilteredMeetings.filter((m) => m.status === 'scheduled' && new Date(m.scheduled_at) >= now).length,
+      overdue: typeFilteredMeetings.filter((m) => m.status === 'scheduled' && new Date(m.scheduled_at) < now).length,
+      completed: typeFilteredMeetings.filter((m) => m.status === 'completed').length,
     };
-  }, [meetings]);
+  }, [typeFilteredMeetings]);
 
   return (
     <div className="grid lg:grid-cols-3 gap-6 mb-8">
@@ -113,10 +139,6 @@ const TasksMeetingsWidget = () => {
               <CalendarIcon className="w-4 h-4" />
               Meetings
             </Button>
-            <Button variant="outline" size="sm" className="h-8 gap-1">
-              + 7 activities
-              <ChevronDown className="w-3 h-3" />
-            </Button>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" className="h-8 gap-1.5">
@@ -124,29 +146,44 @@ const TasksMeetingsWidget = () => {
               Add task
               <ChevronDown className="w-3 h-3" />
             </Button>
-            <Button variant="outline" size="sm" className="h-8 gap-1.5">
-              <CalendarIcon className="w-4 h-4" />
-              Add meeting
-            </Button>
           </div>
         </div>
 
-        {/* Filter tabs */}
-        <div className="flex items-center gap-2 mb-4">
-          {(['all', 'open', 'overdue', 'completed'] as FilterType[]).map((f) => (
-            <Button
-              key={f}
-              variant={filter === f ? 'default' : 'ghost'}
-              size="sm"
-              className={cn(
-                'h-8 capitalize',
-                filter === f ? '' : 'text-muted-foreground'
-              )}
-              onClick={() => setFilter(f)}
-            >
-              {f === 'all' ? `All (${filterCounts.all})` : f.charAt(0).toUpperCase() + f.slice(1)}
-            </Button>
-          ))}
+        {/* Filter tabs with meeting type filter */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            {(['all', 'open', 'overdue', 'completed'] as FilterType[]).map((f) => (
+              <Button
+                key={f}
+                variant={filter === f ? 'default' : 'ghost'}
+                size="sm"
+                className={cn(
+                  'h-8 capitalize',
+                  filter === f ? '' : 'text-muted-foreground'
+                )}
+                onClick={() => setFilter(f)}
+              >
+                {f === 'all' 
+                  ? `All (${filterCounts.all})` 
+                  : `${f.charAt(0).toUpperCase() + f.slice(1)} (${filterCounts[f]})`}
+              </Button>
+            ))}
+          </div>
+          
+          {/* Meeting Type Filter */}
+          <Select value={meetingTypeFilter} onValueChange={(v) => setMeetingTypeFilter(v as MeetingType)}>
+            <SelectTrigger className="w-[150px] h-8">
+              <Filter className="w-3.5 h-3.5 mr-2" />
+              <SelectValue placeholder="Filter by type" />
+            </SelectTrigger>
+            <SelectContent className="bg-popover z-50">
+              {MEETING_TYPES.map((type) => (
+                <SelectItem key={type.value} value={type.value}>
+                  {type.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Sub-header */}
