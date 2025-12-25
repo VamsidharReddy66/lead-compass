@@ -105,6 +105,24 @@ export const useMeetings = () => {
     fetchMeetings();
   }, [user]);
 
+  // Real-time subscription for meetings updates
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('meetings-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'meetings' },
+        fetchMeetings
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
+
   return {
     meetings,
     loading,
