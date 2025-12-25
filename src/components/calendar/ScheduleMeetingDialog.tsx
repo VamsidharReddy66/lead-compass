@@ -42,30 +42,49 @@ const ScheduleMeetingDialog = ({
     leadId && leadName ? { id: leadId, name: leadName } : null
   );
   
-  const defaultDateStr = defaultDate ? defaultDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+  const getCurrentDateTime = () => {
+    const now = new Date();
+    const dateStr = now.toISOString().split('T')[0];
+    const hours = now.getHours().toString().padStart(2, '0');
+    const minutes = now.getMinutes().toString().padStart(2, '0');
+    return { date: dateStr, time: `${hours}:${minutes}` };
+  };
+
+  const getDefaultDateTime = () => {
+    if (defaultDate) {
+      return { date: defaultDate.toISOString().split('T')[0], time: getCurrentDateTime().time };
+    }
+    return getCurrentDateTime();
+  };
   
-  const [formData, setFormData] = useState({
-    title: leadName ? `Follow-up with ${leadName}` : '',
-    description: '',
-    meeting_type: 'follow-up' as const,
-    date: defaultDateStr,
-    time: '10:00',
-    duration_minutes: 30,
-    location: '',
+  const [formData, setFormData] = useState(() => {
+    const { date, time } = getDefaultDateTime();
+    return {
+      title: leadName ? `Follow-up with ${leadName}` : '',
+      description: '',
+      meeting_type: 'follow-up' as const,
+      date,
+      time,
+      duration_minutes: 30,
+      location: '',
+    };
   });
 
-  // Reset form when dialog opens with new lead
+  // Reset form when dialog opens with new lead - set real-time date/time
   useEffect(() => {
     if (open) {
+      const { date, time } = getDefaultDateTime();
       setSelectedLead(leadId && leadName ? { id: leadId, name: leadName } : null);
       setFormData(prev => ({
         ...prev,
         title: leadName ? `Follow-up with ${leadName}` : '',
+        date,
+        time,
       }));
       setSearchQuery('');
       setSearchResults([]);
     }
-  }, [open, leadId, leadName]);
+  }, [open, leadId, leadName, defaultDate]);
 
   // Search leads when query changes
   useEffect(() => {
@@ -157,12 +176,13 @@ const ScheduleMeetingDialog = ({
       });
       onOpenChange(false);
       setSelectedLead(null);
+      const { date, time } = getCurrentDateTime();
       setFormData({
         title: '',
         description: '',
         meeting_type: 'follow-up',
-        date: defaultDateStr,
-        time: '10:00',
+        date,
+        time,
         duration_minutes: 30,
         location: '',
       });
