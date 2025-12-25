@@ -76,12 +76,6 @@ export default {
           warm: "hsl(var(--lead-warm))",
           cold: "hsl(var(--lead-cold))",
         },
-        // Overdue indicator
-        overdue: {
-          DEFAULT: "hsl(var(--overdue))",
-          bg: "hsl(var(--overdue-bg))",
-          border: "hsl(var(--overdue-border))",
-        },
       },
       borderRadius: {
         lg: "var(--radius)",

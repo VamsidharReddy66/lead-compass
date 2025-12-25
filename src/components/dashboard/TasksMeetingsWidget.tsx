@@ -228,41 +228,23 @@ const TasksMeetingsWidget = () => {
             </>
           ) : (
             <div className="w-full space-y-2">
-              {todayMeetings.map((meeting) => {
-                const isOverdue = meeting.status === 'scheduled' && new Date(meeting.scheduled_at) < new Date();
-                return (
-                  <div
-                    key={meeting.id}
-                    className={cn(
-                      'flex items-center gap-3 p-3 rounded-lg text-left',
-                      isOverdue 
-                        ? 'bg-[hsl(var(--overdue-bg))] border-l-4 border-l-[hsl(var(--overdue))]' 
-                        : 'bg-secondary/50'
-                    )}
-                  >
-                    <Checkbox />
-                    <div className="flex-1">
-                      <p className={cn(
-                        'text-sm font-medium',
-                        isOverdue ? 'text-[hsl(var(--overdue))]' : 'text-foreground'
-                      )}>{meeting.title}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {format(new Date(meeting.scheduled_at), 'h:mm a')}
-                        {isOverdue && ' (Overdue)'}
-                      </p>
-                    </div>
-                    <Badge 
-                      variant="outline" 
-                      className={cn(
-                        'capitalize',
-                        isOverdue && 'border-[hsl(var(--overdue))] text-[hsl(var(--overdue))]'
-                      )}
-                    >
-                      {meeting.meeting_type}
-                    </Badge>
+              {todayMeetings.map((meeting) => (
+                <div
+                  key={meeting.id}
+                  className="flex items-center gap-3 p-3 rounded-lg bg-secondary/50 text-left"
+                >
+                  <Checkbox />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-foreground">{meeting.title}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {format(new Date(meeting.scheduled_at), 'h:mm a')}
+                    </p>
                   </div>
-                );
-              })}
+                  <Badge variant="outline" className="capitalize">
+                    {meeting.meeting_type}
+                  </Badge>
+                </div>
+              ))}
             </div>
           )}
         </div>
@@ -314,23 +296,14 @@ const TasksMeetingsWidget = () => {
                   {slot.label}
                 </span>
                 <div className="flex-1">
-                  {slot.meetings.map((meeting) => {
-                    const isOverdue = meeting.status === 'scheduled' && new Date(meeting.scheduled_at) < new Date();
-                    return (
-                      <div
-                        key={meeting.id}
-                        className={cn(
-                          'text-xs rounded px-2 py-1 mb-1',
-                          isOverdue 
-                            ? 'bg-overdue/10 text-overdue font-medium' 
-                            : 'bg-primary/10 text-primary'
-                        )}
-                      >
-                        {meeting.title}
-                        {isOverdue && ' (Overdue)'}
-                      </div>
-                    );
-                  })}
+                  {slot.meetings.map((meeting) => (
+                    <div
+                      key={meeting.id}
+                      className="text-xs bg-primary/10 text-primary rounded px-2 py-1 mb-1"
+                    >
+                      {meeting.title}
+                    </div>
+                  ))}
                 </div>
               </div>
             ))}
