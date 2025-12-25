@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight, Clock, MapPin, Phone, Plus, User, Calendar a
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import ScheduleMeetingDialog from '@/components/calendar/ScheduleMeetingDialog';
+import MeetingOutcomeDialog from '@/components/calendar/MeetingOutcomeDialog';
 
 const meetingTypeConfig: Record<string, { label: string; color: string; bgColor: string }> = {
   'follow-up': { label: 'Follow-up', color: 'text-accent', bgColor: 'bg-accent/10' },
@@ -18,6 +19,11 @@ const CalendarPage = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showScheduleDialog, setShowScheduleDialog] = useState(false);
+  const [showOutcomeDialog, setShowOutcomeDialog] = useState(false);
+  const [activeOutcomeMeeting, setActiveOutcomeMeeting] = useState<Meeting | null>(null);
+  const [scheduleLeadId, setScheduleLeadId] = useState<string | undefined>(undefined);
+  const [scheduleLeadName, setScheduleLeadName] = useState<string | undefined>(undefined);
+  const [scheduleDefaultDate, setScheduleDefaultDate] = useState<Date | undefined>(undefined);
   
   const { meetings, loading: meetingsLoading, getMeetingsForDate } = useMeetings();
   const { leads } = useLeads();
@@ -195,6 +201,11 @@ const CalendarPage = () => {
                   <div
                     key={meeting.id}
                     className="bg-secondary/50 rounded-xl p-4 hover:bg-secondary/70 transition-colors cursor-pointer"
+                    onClick={() => {
+                      setSelectedDate(new Date(meeting.scheduled_at));
+                      setActiveOutcomeMeeting(meeting);
+                      setShowOutcomeDialog(true);
+                    }}
                   >
                     <div className="flex items-start justify-between mb-2">
                       <div>
@@ -232,9 +243,48 @@ const CalendarPage = () => {
                         {meeting.location}
                       </div>
                     )}
+                    <div className="mt-3 flex flex-col gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="w-full text-xs"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveOutcomeMeeting(meeting);
+                          setShowOutcomeDialog(true);
+                        }}
+                      >
+                        Add outcome
+                      </Button>
+
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="w-full text-xs"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          // Close outcome dialog first, then open scheduler after longer delay
+                          setShowOutcomeDialog(false);
+                          setActiveOutcomeMeeting(null);
+                          setScheduleLeadId(meeting.lead_id);
+                          setScheduleLeadName(leadsMap.get(meeting.lead_id)?.name);
+                          setScheduleDefaultDate(new Date(meeting.scheduled_at));
+                          // Longer delay to ensure outcome dialog animation completes
+                          setTimeout(() => setShowScheduleDialog(true), 400);
+                        }}
+                      >
+                        Reschedule
+                      </Button>
+                    </div>
                   </div>
                 );
               })}
+              <MeetingOutcomeDialog
+                open={showOutcomeDialog}
+                onOpenChange={(v) => setShowOutcomeDialog(v)}
+                meeting={activeOutcomeMeeting}
+                onNextSchedule={() => setShowScheduleDialog(true)}
+              />
             </div>
           ) : selectedDate ? (
             <div className="text-center py-8">
@@ -261,8 +311,17 @@ const CalendarPage = () => {
 
       <ScheduleMeetingDialog
         open={showScheduleDialog}
-        onOpenChange={setShowScheduleDialog}
-        defaultDate={selectedDate || undefined}
+        onOpenChange={(v) => {
+          setShowScheduleDialog(v);
+          if (!v) {
+            setScheduleLeadId(undefined);
+            setScheduleLeadName(undefined);
+            setScheduleDefaultDate(undefined);
+          }
+        }}
+        leadId={scheduleLeadId}
+        leadName={scheduleLeadName}
+        defaultDate={scheduleDefaultDate ?? selectedDate ?? undefined}
       />
     </DashboardLayout>
   );
