@@ -9,7 +9,7 @@ import { useAuth } from '@/hooks/useAuth';
 
 const SignupPage = () => {
   const navigate = useNavigate();
-  const { signUp, user, userRole, loading: authLoading } = useAuth();
+  const { signUp, user, loading: authLoading } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [accountType, setAccountType] = useState<'independent_agent' | 'venture'>('independent_agent');
@@ -23,14 +23,11 @@ const SignupPage = () => {
 
   // Redirect if already logged in
   useEffect(() => {
-    if (user && userRole) {
-      if (userRole.role === 'venture_admin') {
-        navigate('/venture-dashboard');
-      } else {
-        navigate('/dashboard');
-      }
-    }
-  }, [user, userRole, navigate]);
+  if (!authLoading && user) {
+    navigate('/dashboard', { replace: true });
+  }
+}, [user, authLoading, navigate]);
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
