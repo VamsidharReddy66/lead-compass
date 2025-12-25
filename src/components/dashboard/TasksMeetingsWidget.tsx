@@ -152,14 +152,15 @@ const TasksMeetingsWidget = () => {
         {/* Filter tabs with meeting type filter */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            {(['all', 'open', 'overdue', 'completed'] as FilterType[]).map((f) => (
+          {(['all', 'open', 'overdue', 'completed'] as FilterType[]).map((f) => (
               <Button
                 key={f}
                 variant={filter === f ? 'default' : 'ghost'}
                 size="sm"
                 className={cn(
                   'h-8 capitalize',
-                  filter === f ? '' : 'text-muted-foreground'
+                  filter === f ? '' : 'text-muted-foreground',
+                  f === 'overdue' && filterCounts.overdue > 0 && 'text-destructive hover:text-destructive'
                 )}
                 onClick={() => setFilter(f)}
               >
@@ -228,23 +229,40 @@ const TasksMeetingsWidget = () => {
             </>
           ) : (
             <div className="w-full space-y-2">
-              {todayMeetings.map((meeting) => (
-                <div
-                  key={meeting.id}
-                  className="flex items-center gap-3 p-3 rounded-lg bg-secondary/50 text-left"
-                >
-                  <Checkbox />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-foreground">{meeting.title}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {format(new Date(meeting.scheduled_at), 'h:mm a')}
-                    </p>
+              {todayMeetings.map((meeting) => {
+                const isOverdue = meeting.status === 'scheduled' && new Date(meeting.scheduled_at) < new Date();
+                return (
+                  <div
+                    key={meeting.id}
+                    className={cn(
+                      "flex items-center gap-3 p-3 rounded-lg text-left",
+                      isOverdue 
+                        ? "bg-destructive/10 border-l-4 border-l-destructive" 
+                        : "bg-secondary/50"
+                    )}
+                  >
+                    <Checkbox />
+                    <div className="flex-1">
+                      <p className={cn(
+                        "text-sm font-medium",
+                        isOverdue ? "text-destructive" : "text-foreground"
+                      )}>{meeting.title}</p>
+                      <p className={cn(
+                        "text-xs",
+                        isOverdue ? "text-destructive/70" : "text-muted-foreground"
+                      )}>
+                        {format(new Date(meeting.scheduled_at), 'h:mm a')}
+                      </p>
+                    </div>
+                    <Badge variant="outline" className={cn(
+                      "capitalize",
+                      isOverdue && "border-destructive text-destructive"
+                    )}>
+                      {meeting.meeting_type}
+                    </Badge>
                   </div>
-                  <Badge variant="outline" className="capitalize">
-                    {meeting.meeting_type}
-                  </Badge>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
