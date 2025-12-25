@@ -155,27 +155,6 @@ const LeadsPage = () => {
 
   return (
     <DashboardLayout>
-      {/* HEADER */}
-      <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="font-display text-2xl font-bold">All Leads</h1>
-          <p className="text-muted-foreground text-sm">
-            Manage and track all your leads in one place.
-          </p>
-        </div>
-        <Button
-          onClick={() => {
-            setDialogMode('add');
-            setEditLeadData(null);
-            setLeadDialogOpen(true);
-          }}
-          className="w-full sm:w-auto"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Add Lead
-        </Button>
-      </div>
-
       {/* FILTERS */}
       <div className="bg-card rounded-2xl p-4 shadow-card mb-6">
         <div className="flex flex-col gap-3">
@@ -318,6 +297,19 @@ const LeadsPage = () => {
         onLeadClick={setSelectedLead}
         onMerge={mergeLeads}
       />
+
+      {/* FLOATING ADD BUTTON */}
+      <Button
+        onClick={() => {
+          setDialogMode('add');
+          setEditLeadData(null);
+          setLeadDialogOpen(true);
+        }}
+        className="fixed bottom-6 left-6 z-30 rounded-full w-14 h-14 shadow-lg"
+        size="icon"
+      >
+        <Plus className="w-6 h-6" />
+      </Button>
     </DashboardLayout>
   );
 };
