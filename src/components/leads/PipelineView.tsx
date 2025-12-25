@@ -36,6 +36,7 @@ const PipelineView = ({ leads, onLeadClick, onLeadStatusChange }: PipelineViewPr
   const [draggedLead, setDraggedLead] = useState<Lead | null>(null);
   const [dragOverStage, setDragOverStage] = useState<LeadStatus | null>(null);
   const [mobileStageIndex, setMobileStageIndex] = useState(0);
+  const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
 
   const getLeadsByStage = (stage: LeadStatus) => {
     return leads.filter((lead) => lead.status === stage);
@@ -70,6 +71,27 @@ const PipelineView = ({ leads, onLeadClick, onLeadStatusChange }: PipelineViewPr
 
   const goToNextStage = () => {
     setMobileStageIndex((prev) => Math.min(pipelineStages.length - 1, prev + 1));
+  };
+
+  const handleMobileLeadSelect = (lead: Lead) => {
+    // Toggle selection - if already selected, deselect
+    if (selectedLeadId === lead.id) {
+      setSelectedLeadId(null);
+    } else {
+      setSelectedLeadId(lead.id);
+    }
+  };
+
+  const handleMoveToStage = (targetStage: LeadStatus) => {
+    if (selectedLeadId) {
+      onLeadStatusChange(selectedLeadId, targetStage);
+      setSelectedLeadId(null);
+      // Navigate to the target stage
+      const targetIndex = pipelineStages.indexOf(targetStage);
+      if (targetIndex !== -1) {
+        setMobileStageIndex(targetIndex);
+      }
+    }
   };
 
   const currentMobileStage = pipelineStages[mobileStageIndex];
@@ -155,7 +177,11 @@ const PipelineView = ({ leads, onLeadClick, onLeadStatusChange }: PipelineViewPr
                 key={lead.id}
                 draggable
                 onDragStart={(e) => handleDragStart(e, lead)}
-                className="transition-transform"
+                onClick={() => handleMobileLeadSelect(lead)}
+                className={cn(
+                  'transition-transform',
+                  selectedLeadId === lead.id && 'ring-2 ring-primary rounded-lg'
+                )}
               >
                 <LeadCard
                   lead={lead}
@@ -175,28 +201,33 @@ const PipelineView = ({ leads, onLeadClick, onLeadStatusChange }: PipelineViewPr
         </div>
 
         {/* Quick Move Buttons */}
-        {currentMobileStageLeads.length > 0 && (
-          <div className="mt-3 flex flex-wrap items-center gap-2 w-full max-w-full">
-            <span className="text-xs text-muted-foreground py-1.5">Move to:</span>
-            {pipelineStages
-              .filter((s) => s !== currentMobileStage)
-              .slice(0, 4)
-              .map((stage) => {
-                const config = LEAD_STATUS_CONFIG[stage];
-                return (
-                  <button
-                    key={stage}
-                    className="px-2.5 py-1 bg-secondary rounded-full text-xs text-muted-foreground hover:bg-secondary/80 transition-colors"
-                    onClick={() => {
-                      // This is a hint - user needs to tap a lead first
-                    }}
-                  >
-                    {mobileStageLabels[stage]}
-                  </button>
-                );
-              })}
-          </div>
-        )}
+        <div className="mt-3 flex flex-wrap items-center gap-2 w-full max-w-full">
+          <span className={cn(
+            "text-xs py-1.5",
+            selectedLeadId ? "text-primary font-medium" : "text-muted-foreground"
+          )}>
+            {selectedLeadId ? "Move selected to:" : "Tap a lead, then:"}
+          </span>
+          {pipelineStages
+            .filter((s) => s !== currentMobileStage)
+            .map((stage) => {
+              return (
+                <button
+                  key={stage}
+                  disabled={!selectedLeadId}
+                  className={cn(
+                    "px-2.5 py-1 rounded-full text-xs transition-colors",
+                    selectedLeadId 
+                      ? "bg-primary text-primary-foreground hover:bg-primary/90" 
+                      : "bg-secondary text-muted-foreground opacity-50"
+                  )}
+                  onClick={() => handleMoveToStage(stage)}
+                >
+                  {mobileStageLabels[stage]}
+                </button>
+              );
+            })}
+        </div>
       </div>
 
       {/* Desktop View - Horizontal Columns */}
