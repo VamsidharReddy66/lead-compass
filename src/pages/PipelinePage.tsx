@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import PipelineView from '@/components/leads/PipelineView';
 import LeadDetailPanel from '@/components/leads/LeadDetailPanel';
@@ -8,41 +8,71 @@ import { Loader2 } from 'lucide-react';
 
 const PipelinePage = () => {
   const { leads, loading, updateLead } = useLeads();
-  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+
+  /* -----------------------------
+     Selection (ID-based, stable)
+  ------------------------------ */
+  const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
 
   const handleLeadClick = (lead: Lead) => {
-    setSelectedLead(lead);
+    setSelectedLeadId(lead.id);
   };
 
   const handleClosePanel = () => {
-    setSelectedLead(null);
+    setSelectedLeadId(null);
   };
 
-  const handleLeadStatusChange = async (leadId: string, newStatus: LeadStatus) => {
-    await updateLead(leadId, { status: newStatus });
+  /* -----------------------------
+     STATUS UPDATE (DB-SAFE)
+  ------------------------------ */
+  const handleLeadStatusChange = async (
+    leadId: string,
+    newStatus: LeadStatus
+  ) => {
+    /**
+     * CRITICAL:
+     * newStatus MUST be enum value (not label)
+     * Matches DbLead['status']
+     */
+    await updateLead(leadId, {
+      status: newStatus as any, // safe: guarded inside useLeads
+    });
   };
 
-  // Map database leads to Lead type
-  const mappedLeads: Lead[] = leads.map((lead) => ({
-    id: lead.id,
-    name: lead.name,
-    phone: lead.phone,
-    email: lead.email || undefined,
-    propertyType: lead.property_type as Lead['propertyType'],
-    budgetMin: lead.budget_min || undefined,
-    budgetMax: lead.budget_max || undefined,
-    locationPreference: lead.location_preference || undefined,
-    source: lead.source as Lead['source'],
-    status: lead.status as LeadStatus,
-    temperature: lead.temperature as Lead['temperature'],
-    assignedAgentId: lead.assigned_agent_id,
-    followUpDate: lead.follow_up_date || undefined,
-    followUpTime: lead.follow_up_time || undefined,
-    notes: lead.notes || undefined,
-    tags: lead.tags || [],
-    createdAt: lead.created_at,
-    updatedAt: lead.updated_at,
-  }));
+  /* -----------------------------
+     Map DB Lead → UI Lead
+     (single source of truth)
+  ------------------------------ */
+  const mappedLeads: Lead[] = useMemo(
+    () =>
+      leads.map((lead) => ({
+        id: lead.id,
+        name: lead.name,
+        phone: lead.phone,
+        email: lead.email || undefined,
+        propertyType: lead.property_type,
+        budgetMin: lead.budget_min ?? 0,
+        budgetMax: lead.budget_max ?? 0,
+        locationPreference: lead.location_preference || '',
+        source: lead.source,
+        status: lead.status as LeadStatus, // enum → enum
+        temperature: lead.temperature,
+        assignedAgentId: lead.assigned_agent_id,
+        followUpDate: lead.follow_up_date || undefined,
+        followUpTime: lead.follow_up_time || undefined,
+        notes: lead.notes || '',
+        tags: lead.tags || [],
+        createdAt: lead.created_at,
+        updatedAt: lead.updated_at,
+      })),
+    [leads]
+  );
+
+  /* -----------------------------
+     Selected Lead (derived)
+  ------------------------------ */
+  const selectedLead =
+    mappedLeads.find((l) => l.id === selectedLeadId) || null;
 
   if (loading) {
     return (
@@ -59,13 +89,15 @@ const PipelinePage = () => {
       <div className="space-y-6">
         {/* Header */}
         <div>
-          <h1 className="text-3xl font-display font-bold text-foreground">Pipeline</h1>
+          <h1 className="text-3xl font-display font-bold text-foreground">
+            Pipeline
+          </h1>
           <p className="text-muted-foreground mt-1">
             Drag and drop leads between stages to update their status
           </p>
         </div>
 
-        {/* Pipeline View */}
+        {/* Pipeline */}
         <PipelineView
           leads={mappedLeads}
           onLeadClick={handleLeadClick}
@@ -73,9 +105,19 @@ const PipelinePage = () => {
         />
       </div>
 
-      {/* Lead Detail Panel */}
+      {/* Detail Panel */}
       {selectedLead && (
-        <LeadDetailPanel lead={selectedLead} onClose={handleClosePanel} />
+        <>
+          <div
+            className="fixed inset-0 bg-foreground/20 z-40"
+            onClick={handleClosePanel}
+          />
+          <LeadDetailPanel
+            lead={selectedLead}
+            onClose={handleClosePanel}
+            onStatusChange={handleLeadStatusChange}
+          />
+        </>
       )}
     </DashboardLayout>
   );
