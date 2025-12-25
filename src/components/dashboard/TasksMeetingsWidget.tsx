@@ -238,28 +238,20 @@ const TasksMeetingsWidget = () => {
         </div>
 
         {/* Content */}
-        <div className="min-h-[200px] flex flex-col items-center justify-center text-center py-8">
+        <div className="min-h-[120px]">
           {loading ? (
-            <p className="text-muted-foreground">Loading...</p>
+            <div className="flex items-center justify-center py-8">
+              <p className="text-muted-foreground">Loading...</p>
+            </div>
           ) : todayMeetings.length === 0 ? (
-            <>
-              <h4 className="font-semibold text-foreground mb-2">
-                Find your upcoming tasks, meetings and reminders here.
-              </h4>
-              <p className="text-sm text-muted-foreground mb-4">
-                Join video calls from Freshsales Suite
+            <div className="flex items-center justify-center py-8">
+              <p className="text-muted-foreground">
+                {filter === 'open' && 'No open'}
+                {filter === 'overdue' && 'No overdue'}
+                {filter === 'completed' && 'No completed'}
+                {filter === 'all' && 'No tasks'}
               </p>
-              <div className="flex items-center gap-3">
-                <Button variant="outline" size="sm" className="gap-2">
-                  <Video className="w-4 h-4 text-blue-500" />
-                  Zoom
-                </Button>
-                <Button variant="outline" size="sm" className="gap-2">
-                  <Video className="w-4 h-4 text-purple-600" />
-                  Microsoft Teams
-                </Button>
-              </div>
-            </>
+            </div>
           ) : (
             <div className="w-full space-y-2">
               {todayMeetings.map((meeting) => {
