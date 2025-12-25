@@ -13,11 +13,10 @@ import {
   Plus,
   UserCog,
   GitBranch,
-  Menu,
-  X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -27,7 +26,6 @@ interface DashboardLayoutProps {
 
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { profile, userRole, signOut, isVentureAdmin } = useAuth();
@@ -138,12 +136,16 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
         {/* User section */}
         <div className="p-4 border-t border-sidebar-border">
-          <div className={cn('flex items-center gap-3', isCollapsed && 'justify-center')}>
-            <div className="w-10 h-10 rounded-full bg-sidebar-accent flex items-center justify-center flex-shrink-0">
-              <span className="text-sidebar-foreground font-medium">
+          <Link 
+            to="/settings" 
+            className={cn('flex items-center gap-3 hover:opacity-80 transition-opacity', isCollapsed && 'justify-center')}
+          >
+            <Avatar className="w-10 h-10 border-2 border-sidebar-border flex-shrink-0">
+              <AvatarImage src={profile?.avatar_url || ''} key={profile?.avatar_url} />
+              <AvatarFallback className="bg-sidebar-accent text-sidebar-foreground">
                 {getInitials(profile?.full_name)}
-              </span>
-            </div>
+              </AvatarFallback>
+            </Avatar>
             {!isCollapsed && (
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-medium text-sidebar-foreground truncate">
@@ -152,7 +154,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                 <div className="text-xs text-sidebar-foreground/60">{getRoleLabel()}</div>
               </div>
             )}
-          </div>
+          </Link>
           {!isCollapsed && (
             <Button
               variant="ghost"
@@ -180,80 +182,19 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             <Bell className="w-5 h-5" />
             <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-accent rounded-full" />
           </Button>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-9 w-9"
-            onClick={() => setIsMobileMenuOpen(true)}
+          <button
+            onClick={() => navigate('/settings')}
+            className="flex-shrink-0"
           >
-            <Menu className="w-5 h-5" />
-          </Button>
+            <Avatar className="w-9 h-9 border-2 border-border">
+              <AvatarImage src={profile?.avatar_url || ''} key={profile?.avatar_url} />
+              <AvatarFallback className="text-xs bg-primary text-primary-foreground">
+                {getInitials(profile?.full_name)}
+              </AvatarFallback>
+            </Avatar>
+          </button>
         </div>
       </header>
-
-      {/* Mobile Menu Overlay */}
-      {isMobileMenuOpen && (
-        <div className="fixed inset-0 z-50 md:hidden">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setIsMobileMenuOpen(false)} />
-          <div className="absolute right-0 top-0 h-full w-72 bg-card shadow-xl animate-in slide-in-from-right">
-            <div className="flex items-center justify-between p-4 border-b">
-              <span className="font-semibold">Menu</span>
-              <Button variant="ghost" size="icon" onClick={() => setIsMobileMenuOpen(false)}>
-                <X className="w-5 h-5" />
-              </Button>
-            </div>
-            
-            {/* User Info */}
-            <div className="p-4 border-b">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center">
-                  <span className="text-foreground font-medium">{getInitials(profile?.full_name)}</span>
-                </div>
-                <div>
-                  <div className="text-sm font-medium">{profile?.full_name || 'User'}</div>
-                  <div className="text-xs text-muted-foreground">{getRoleLabel()}</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Nav Items */}
-            <nav className="p-4 space-y-1">
-              {navItems.map((item, index) => {
-                const isActive = location.pathname === item.path;
-                return (
-                  <Link
-                    key={`mobile-${item.path}-${index}`}
-                    to={item.path}
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className={cn(
-                      'flex items-center gap-3 px-3 py-3 rounded-xl transition-colors',
-                      isActive
-                        ? 'bg-primary text-primary-foreground'
-                        : 'text-foreground hover:bg-secondary'
-                    )}
-                  >
-                    <item.icon className="w-5 h-5" />
-                    <span className="font-medium">{item.label}</span>
-                  </Link>
-                );
-              })}
-            </nav>
-
-            {/* Sign Out */}
-            <div className="absolute bottom-0 left-0 right-0 p-4 border-t">
-              <Button
-                variant="ghost"
-                onClick={handleSignOut}
-                className="w-full justify-start text-muted-foreground hover:text-foreground"
-              >
-                <LogOut className="w-4 h-4 mr-3" />
-                Sign Out
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Main Content */}
       <div className={cn(
         'flex-1 transition-all duration-300',
