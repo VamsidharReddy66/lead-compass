@@ -49,11 +49,25 @@ const LoginPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background flex">
-      {/* Left side - Form */}
-      <div className="flex-1 flex items-center justify-center p-8">
-        <div className="w-full max-w-md">
-          <div className="mb-8">
+    <div className="min-h-screen bg-background flex flex-col lg:flex-row">
+      {/* Mobile Header */}
+      <div className="lg:hidden bg-hero-gradient p-6 pb-8 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-accent/20 rounded-full blur-2xl" />
+        <Link to="/" className="inline-flex items-center gap-2 relative z-10">
+          <div className="w-10 h-10 rounded-xl bg-background/20 backdrop-blur-sm flex items-center justify-center">
+            <Building2 className="w-5 h-5 text-primary-foreground" />
+          </div>
+          <span className="font-display font-bold text-xl text-primary-foreground">LeadFlow</span>
+        </Link>
+        <h1 className="font-display text-2xl font-bold text-primary-foreground mt-4 relative z-10">Welcome back</h1>
+        <p className="text-primary-foreground/80 text-sm mt-1 relative z-10">Sign in to continue</p>
+      </div>
+
+      {/* Form Section */}
+      <div className="flex-1 flex items-start lg:items-center justify-center p-6 lg:p-8 -mt-4 lg:mt-0">
+        <div className="w-full max-w-md bg-card lg:bg-transparent rounded-2xl lg:rounded-none p-6 lg:p-0 shadow-card lg:shadow-none">
+          {/* Desktop Header */}
+          <div className="mb-6 lg:mb-8 hidden lg:block">
             <Link to="/" className="inline-flex items-center gap-2 mb-8">
               <div className="w-10 h-10 rounded-xl bg-hero-gradient flex items-center justify-center">
                 <Building2 className="w-5 h-5 text-primary-foreground" />
@@ -64,16 +78,16 @@ const LoginPage = () => {
             <p className="text-muted-foreground">Sign in to continue managing your leads</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-4 lg:space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="text-sm">Email</Label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 lg:w-5 lg:h-5 text-muted-foreground" />
                 <Input
                   id="email"
                   type="email"
                   placeholder="you@company.com"
-                  className="pl-10 h-12"
+                  className="pl-10 h-11 lg:h-12 text-sm lg:text-base"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   required
@@ -83,18 +97,18 @@ const LoginPage = () => {
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="password">Password</Label>
-                <Link to="/forgot-password" className="text-sm text-accent hover:underline">
+                <Label htmlFor="password" className="text-sm">Password</Label>
+                <Link to="/forgot-password" className="text-xs lg:text-sm text-accent hover:underline">
                   Forgot password?
                 </Link>
               </div>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 lg:w-5 lg:h-5 text-muted-foreground" />
                 <Input
                   id="password"
                   type={showPassword ? 'text' : 'password'}
                   placeholder="••••••••"
-                  className="pl-10 pr-10 h-12"
+                  className="pl-10 pr-10 h-11 lg:h-12 text-sm lg:text-base"
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   required
@@ -102,19 +116,19 @@ const LoginPage = () => {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1"
                 >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  {showPassword ? <EyeOff className="w-4 h-4 lg:w-5 lg:h-5" /> : <Eye className="w-4 h-4 lg:w-5 lg:h-5" />}
                 </button>
               </div>
             </div>
 
-            <Button type="submit" variant="accent" className="w-full h-12" disabled={isLoading}>
+            <Button type="submit" variant="accent" className="w-full h-11 lg:h-12 text-sm lg:text-base" disabled={isLoading}>
               {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Sign In'}
             </Button>
           </form>
 
-          <p className="text-center text-muted-foreground mt-6">
+          <p className="text-center text-muted-foreground mt-6 text-sm">
             Don't have an account?{' '}
             <Link to="/signup" className="text-accent hover:underline font-medium">
               Sign up
@@ -123,7 +137,7 @@ const LoginPage = () => {
         </div>
       </div>
 
-      {/* Right side - Visual */}
+      {/* Desktop Right Visual */}
       <div className="hidden lg:flex flex-1 bg-hero-gradient items-center justify-center p-12 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-96 h-96 bg-accent/20 rounded-full blur-3xl" />
         <div className="absolute bottom-0 left-0 w-64 h-64 bg-accent/10 rounded-full blur-2xl" />
