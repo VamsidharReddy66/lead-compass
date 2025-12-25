@@ -95,6 +95,7 @@ const PipelineView = ({ leads, onLeadClick, onLeadStatusChange }: PipelineViewPr
                       lead={lead}
                       onClick={() => onLeadClick(lead)}
                       isDragging={draggedLead?.id === lead.id}
+                      showOverdueIndicator={true}
                     />
                   </div>
                 ))}
