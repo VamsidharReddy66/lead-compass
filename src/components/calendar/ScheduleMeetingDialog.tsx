@@ -178,7 +178,7 @@ const ScheduleMeetingDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-sm p-4">
+      <DialogContent className="sm:max-w-sm p-4 rounded-2xl max-h-[calc(100vh-120px)] overflow-y-auto my-[60px]">
         <DialogHeader className="pb-2">
           <DialogTitle className="text-base">{reschedulesMeetingId ? 'Reschedule Meeting' : 'Schedule Meeting'}</DialogTitle>
         </DialogHeader>
