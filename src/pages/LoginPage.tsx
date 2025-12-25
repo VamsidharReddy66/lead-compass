@@ -6,10 +6,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 
 const LoginPage = () => {
   const navigate = useNavigate();
-  const { signIn, user, loading: authLoading } = useAuth();
+  const { signIn, user, loading: authLoading, signOut } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -34,10 +35,28 @@ const LoginPage = () => {
     if (error) {
       toast.error(error.message || 'Invalid email or password');
       setIsLoading(false);
-    } else {
-      toast.success('Welcome back!');
-      // Navigation will be handled by useEffect
+      return;
     }
+
+    // Check if the user is a venture account
+    const { data: { user: loggedInUser } } = await supabase.auth.getUser();
+    if (loggedInUser) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('account_type')
+        .eq('id', loggedInUser.id)
+        .single();
+
+      if (profile?.account_type === 'venture') {
+        await signOut();
+        toast.error('Venture accounts are coming soon! Currently under development.');
+        setIsLoading(false);
+        return;
+      }
+    }
+
+    toast.success('Welcome back!');
+    // Navigation will be handled by useEffect
   };
 
   if (authLoading) {
