@@ -58,6 +58,7 @@ const LeadDetailPanel = ({ lead, onClose, onStatusChange }: LeadDetailPanelProps
   const [showOutcomeDialog, setShowOutcomeDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [isRescheduleMode, setIsRescheduleMode] = useState(false);
+  const [pendingOutcomeForNextSchedule, setPendingOutcomeForNextSchedule] = useState(false);
 
   const [selectedOutcome, setSelectedOutcome] = useState('');
   const [outcomeNote, setOutcomeNote] = useState('');
@@ -124,37 +125,31 @@ const LeadDetailPanel = ({ lead, onClose, onStatusChange }: LeadDetailPanelProps
       setOutcomeNote('');
       setActiveMeeting(null);
       setShowOutcomeDialog(false);
+      setPendingOutcomeForNextSchedule(false);
     }
   };
 
-  const handleNextSchedule = async () => {
-    // Save outcome if selected, then mark meeting as completed
-    if (selectedOutcome && activeMeeting) {
-      try {
-        const now = formatNow();
-        await createActivity({
-          lead_id: lead.id,
-          activity_type: 'meeting_outcome',
-          description: `Outcome: ${selectedOutcome}${outcomeNote ? ' - ' + outcomeNote : ''} | Meeting: ${formatDateTime(activeMeeting.scheduled_at)} | Updated: ${now}`,
-          previous_value: null,
-          new_value: selectedOutcome,
-          meeting_id: activeMeeting.id,
-        });
-
-        // Mark meeting as completed so user can schedule a new one
-        await updateMeetingStatus(activeMeeting.id, 'completed');
-      } catch (err) {
-        console.error('Error saving outcome before scheduling:', err);
-      }
-    }
-
-    // Close outcome dialog and open schedule dialog after a short delay (new meeting, not reschedule)
+  const handleNextSchedule = () => {
+    // Don't save outcome yet - just open schedule dialog
+    // Keep outcome data and activeMeeting in state
+    // Set flag so we know to show outcome dialog after scheduling
+    setPendingOutcomeForNextSchedule(true);
     setShowOutcomeDialog(false);
     setIsRescheduleMode(false);
-    setSelectedOutcome('');
-    setOutcomeNote('');
-    setActiveMeeting(null);
     setTimeout(() => setShowScheduleDialog(true), 400);
+  };
+
+  const handleScheduleDialogClose = (open: boolean) => {
+    setShowScheduleDialog(open);
+    if (!open) {
+      setIsRescheduleMode(false);
+      // If we have pending outcome, show outcome dialog again to save
+      if (pendingOutcomeForNextSchedule && activeMeeting) {
+        setTimeout(() => setShowOutcomeDialog(true), 300);
+      } else {
+        setActiveMeeting(null);
+      }
+    }
   };
 
   const formatDateTime = (iso: string) => {
@@ -489,13 +484,7 @@ const LeadDetailPanel = ({ lead, onClose, onStatusChange }: LeadDetailPanelProps
 
       <ScheduleMeetingDialog
         open={showScheduleDialog}
-        onOpenChange={(open) => {
-          setShowScheduleDialog(open);
-          if (!open) {
-            setIsRescheduleMode(false);
-            setActiveMeeting(null);
-          }
-        }}
+        onOpenChange={handleScheduleDialogClose}
         leadId={lead.id}
         leadName={lead.name}
         reschedulesMeetingId={isRescheduleMode && activeMeeting ? activeMeeting.id : undefined}
