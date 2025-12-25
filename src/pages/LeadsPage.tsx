@@ -19,7 +19,14 @@ import {
   Plus,
   Loader2,
   Copy,
+  SlidersHorizontal,
+  X,
 } from 'lucide-react';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -68,6 +75,7 @@ const LeadsPage = () => {
   const [propertyFilter, setPropertyFilter] =
     useState<PropertyType | 'all'>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [searchOpen, setSearchOpen] = useState(false);
 
   const [leadDialogOpen, setLeadDialogOpen] = useState(false);
   const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
@@ -155,81 +163,139 @@ const LeadsPage = () => {
 
   return (
     <DashboardLayout>
-      {/* FILTERS */}
-      <div className="space-y-2 mb-4">
-        {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="Search by name, phone, email..."
-            className="pl-9 h-9 text-sm bg-card border-border"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-
-        {/* Status Dropdown */}
-        <div className="relative">
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as LeadStatus | 'all')}
-            className="w-full h-9 px-3 pr-8 rounded-lg border border-border bg-card text-sm appearance-none"
-          >
-            <option value="all">All Statuses</option>
-            {Object.entries(LEAD_STATUS_CONFIG).map(([key, cfg]) => (
-              <option key={key} value={key}>{cfg.label}</option>
-            ))}
-          </select>
-          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none text-muted-foreground" />
-        </div>
-
-        {/* Property Dropdown */}
-        <div className="relative">
-          <select
-            value={propertyFilter}
-            onChange={(e) => setPropertyFilter(e.target.value as PropertyType | 'all')}
-            className="w-full h-9 px-3 pr-8 rounded-lg border border-border bg-card text-sm appearance-none"
-          >
-            <option value="all">All Properties</option>
-            {Object.entries(PROPERTY_TYPE_LABELS).map(([k, v]) => (
-              <option key={k} value={k}>{v}</option>
-            ))}
-          </select>
-          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none text-muted-foreground" />
-        </div>
-
-        {/* Actions Row */}
-        <div className="flex items-center justify-between">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setDuplicateDialogOpen(true)}
-            className="h-8 text-xs px-3"
-          >
-            <Copy className="w-3 h-3 mr-1.5" />
-            Find Duplicates
-          </Button>
-
-          <div className="flex bg-secondary rounded-lg p-0.5">
+      {/* FILTER BAR */}
+      <div className="flex items-center gap-2 mb-4">
+        {/* Search Icon / Expandable Search */}
+        {searchOpen ? (
+          <div className="flex-1 relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              autoFocus
+              placeholder="Search..."
+              className="pl-8 pr-8 h-9 text-sm bg-card border-border"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
             <button
-              onClick={() => setViewMode('grid')}
-              className={cn(
-                'p-1.5 rounded-md',
-                viewMode === 'grid' ? 'bg-card shadow-sm' : 'text-muted-foreground'
-              )}
+              onClick={() => {
+                setSearchOpen(false);
+                setSearchQuery('');
+              }}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
             >
-              <LayoutGrid className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setViewMode('list')}
-              className={cn(
-                'p-1.5 rounded-md',
-                viewMode === 'list' ? 'bg-card shadow-sm' : 'text-muted-foreground'
-              )}
-            >
-              <List className="w-4 h-4" />
+              <X className="w-4 h-4" />
             </button>
           </div>
+        ) : (
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-9 w-9 shrink-0"
+            onClick={() => setSearchOpen(true)}
+          >
+            <Search className="w-4 h-4" />
+          </Button>
+        )}
+
+        {/* Filter Button with Popover */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className={cn(
+                "h-9 gap-1.5",
+                (statusFilter !== 'all' || propertyFilter !== 'all') && "border-primary text-primary"
+              )}
+            >
+              <SlidersHorizontal className="w-4 h-4" />
+              Filter
+              {(statusFilter !== 'all' || propertyFilter !== 'all') && (
+                <span className="ml-1 w-5 h-5 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center">
+                  {(statusFilter !== 'all' ? 1 : 0) + (propertyFilter !== 'all' ? 1 : 0)}
+                </span>
+              )}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-64 p-3 space-y-3" align="start">
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground">Status</label>
+              <div className="relative">
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value as LeadStatus | 'all')}
+                  className="w-full h-9 px-3 pr-8 rounded-lg border border-border bg-background text-sm appearance-none"
+                >
+                  <option value="all">All Statuses</option>
+                  {Object.entries(LEAD_STATUS_CONFIG).map(([key, cfg]) => (
+                    <option key={key} value={key}>{cfg.label}</option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none text-muted-foreground" />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground">Property Type</label>
+              <div className="relative">
+                <select
+                  value={propertyFilter}
+                  onChange={(e) => setPropertyFilter(e.target.value as PropertyType | 'all')}
+                  className="w-full h-9 px-3 pr-8 rounded-lg border border-border bg-background text-sm appearance-none"
+                >
+                  <option value="all">All Properties</option>
+                  {Object.entries(PROPERTY_TYPE_LABELS).map(([k, v]) => (
+                    <option key={k} value={k}>{v}</option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none text-muted-foreground" />
+              </div>
+            </div>
+            {(statusFilter !== 'all' || propertyFilter !== 'all') && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full h-8 text-xs"
+                onClick={() => {
+                  setStatusFilter('all');
+                  setPropertyFilter('all');
+                }}
+              >
+                Clear Filters
+              </Button>
+            )}
+          </PopoverContent>
+        </Popover>
+
+        {/* Find Duplicates */}
+        <Button
+          variant="outline"
+          size="icon"
+          className="h-9 w-9 shrink-0"
+          onClick={() => setDuplicateDialogOpen(true)}
+        >
+          <Copy className="w-4 h-4" />
+        </Button>
+
+        {/* View Toggle */}
+        <div className="flex bg-secondary rounded-lg p-0.5 ml-auto">
+          <button
+            onClick={() => setViewMode('grid')}
+            className={cn(
+              'p-1.5 rounded-md',
+              viewMode === 'grid' ? 'bg-card shadow-sm' : 'text-muted-foreground'
+            )}
+          >
+            <LayoutGrid className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => setViewMode('list')}
+            className={cn(
+              'p-1.5 rounded-md',
+              viewMode === 'list' ? 'bg-card shadow-sm' : 'text-muted-foreground'
+            )}
+          >
+            <List className="w-4 h-4" />
+          </button>
         </div>
       </div>
 
