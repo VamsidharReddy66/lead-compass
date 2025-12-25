@@ -1,7 +1,8 @@
 import { Lead, LEAD_STATUS_CONFIG, PROPERTY_TYPE_LABELS } from '@/types/lead';
 import { formatCurrency } from '@/data/mockData';
-import { Phone, Mail, MapPin, Calendar, Flame, Thermometer, Snowflake } from 'lucide-react';
+import { Phone, Mail, MapPin, Calendar, Flame, Thermometer, Snowflake, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useMemo } from 'react';
 
 interface LeadCardProps {
   lead: Lead;
@@ -25,12 +26,26 @@ const LeadCard = ({ lead, onClick, isDragging }: LeadCardProps) => {
   const TempIcon = temperatureIcons[lead.temperature];
   const statusConfig = LEAD_STATUS_CONFIG[lead.status];
 
+  // Check if lead is overdue (follow-up date is in the past)
+  const isOverdue = useMemo(() => {
+    if (!lead.followUpDate) return false;
+    const followUpDateTime = new Date(lead.followUpDate);
+    if (lead.followUpTime) {
+      const [hours, minutes] = lead.followUpTime.split(':').map(Number);
+      followUpDateTime.setHours(hours, minutes, 0, 0);
+    } else {
+      followUpDateTime.setHours(23, 59, 59, 999);
+    }
+    return followUpDateTime < new Date();
+  }, [lead.followUpDate, lead.followUpTime]);
+
   return (
     <div
       onClick={onClick}
       className={cn(
         'bg-card rounded-xl p-4 shadow-card hover:shadow-card-hover transition-all duration-200 cursor-pointer group',
-        isDragging && 'opacity-50 rotate-2 scale-105'
+        isDragging && 'opacity-50 rotate-2 scale-105',
+        isOverdue && 'bg-[hsl(var(--overdue-bg))] border-l-4 border-l-[hsl(var(--overdue))]'
       )}
     >
       {/* Header */}
@@ -38,8 +53,12 @@ const LeadCard = ({ lead, onClick, isDragging }: LeadCardProps) => {
         <div className="flex-1 min-w-0">
           <p className="text-[10px] text-muted-foreground/60 font-mono">#{lead.id.slice(0, 8)}</p>
           <div className="flex items-center gap-2">
-            <h3 className="font-semibold text-foreground truncate">{lead.name}</h3>
+            <h3 className={cn(
+              'font-semibold truncate',
+              isOverdue ? 'text-[hsl(var(--overdue))]' : 'text-foreground'
+            )}>{lead.name}</h3>
             <TempIcon className={cn('w-4 h-4 flex-shrink-0', temperatureColors[lead.temperature])} />
+            {isOverdue && <AlertCircle className="w-4 h-4 flex-shrink-0 text-[hsl(var(--overdue))]" />}
           </div>
           <p className="text-sm text-muted-foreground">
             {lead.propertyTypes && lead.propertyTypes.length > 0
@@ -71,9 +90,15 @@ const LeadCard = ({ lead, onClick, isDragging }: LeadCardProps) => {
 
       {/* Follow-up */}
       {lead.followUpDate && (
-        <div className="flex items-center gap-2 text-xs text-accent bg-accent/10 px-2 py-1.5 rounded-lg">
+        <div className={cn(
+          'flex items-center gap-2 text-xs px-2 py-1.5 rounded-lg',
+          isOverdue 
+            ? 'text-[hsl(var(--overdue))] bg-[hsl(var(--overdue))]/10 font-medium' 
+            : 'text-accent bg-accent/10'
+        )}>
           <Calendar className="w-3.5 h-3.5" />
-          Follow-up: {new Date(lead.followUpDate).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}
+          {isOverdue ? 'Overdue: ' : 'Follow-up: '}
+          {new Date(lead.followUpDate).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}
           {lead.followUpTime && ` at ${lead.followUpTime}`}
         </div>
       )}
