@@ -1,35 +1,53 @@
-import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useLeads, CreateLeadInput } from "@/hooks/useLeads";
-import { PROPERTY_TYPE_LABELS, LEAD_SOURCE_LABELS, PropertyType } from "@/types/lead";
+import { useState, useEffect } from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { useLeads, CreateLeadInput } from '@/hooks/useLeads';
+import { PROPERTY_TYPE_LABELS, LEAD_SOURCE_LABELS, PropertyType } from '@/types/lead';
 
 interface AddLeadDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  mode?: "add" | "edit";
+  mode?: 'add' | 'edit';
   initialData?: CreateLeadInput;
   onUpdate?: (data: CreateLeadInput) => Promise<void>;
 }
 
 const emptyForm: CreateLeadInput = {
-  name: "",
-  phone: "",
-  email: "",
-  property_type: "flat",
+  name: '',
+  phone: '',
+  email: '',
+  property_types: [],
   budget_min: 0,
   budget_max: 0,
-  location_preference: "",
-  source: "other",
-  temperature: "warm",
-  notes: "",
+  location_preference: '',
+  source: 'other',
+  temperature: 'warm',
+  notes: '',
 };
 
-const AddLeadDialog = ({ open, onOpenChange, mode = "add", initialData, onUpdate }: AddLeadDialogProps) => {
+const AddLeadDialog = ({
+  open,
+  onOpenChange,
+  mode = 'add',
+  initialData,
+  onUpdate,
+}: AddLeadDialogProps) => {
   const { createLead } = useLeads();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<CreateLeadInput>(emptyForm);
@@ -38,26 +56,31 @@ const AddLeadDialog = ({ open, onOpenChange, mode = "add", initialData, onUpdate
      INIT FORM
   ------------------------------ */
   useEffect(() => {
-    if (mode === "edit" && initialData) {
+    if (mode === 'edit' && initialData) {
       setFormData({
         ...initialData,
-        property_type: initialData.property_type ?? "flat",
+        property_types: initialData.property_types ?? [],
       });
     }
 
-    if (mode === "add") {
+    if (mode === 'add') {
       setFormData(emptyForm);
     }
   }, [mode, initialData, open]);
 
   /* -----------------------------
-     PROPERTY TYPE HANDLER
+     MULTI SELECT HANDLER
   ------------------------------ */
-  const selectPropertyType = (type: PropertyType) => {
-    setFormData((prev) => ({
-      ...prev,
-      property_type: type,
-    }));
+  const togglePropertyType = (type: PropertyType) => {
+    setFormData((prev) => {
+      const exists = prev.property_types?.includes(type);
+      return {
+        ...prev,
+        property_types: exists
+          ? prev.property_types?.filter((t) => t !== type)
+          : [...(prev.property_types ?? []), type],
+      };
+    });
   };
 
   /* -----------------------------
@@ -69,7 +92,7 @@ const AddLeadDialog = ({ open, onOpenChange, mode = "add", initialData, onUpdate
 
     setLoading(true);
 
-    if (mode === "edit" && onUpdate) {
+    if (mode === 'edit' && onUpdate) {
       await onUpdate(formData);
     } else {
       await createLead(formData);
@@ -83,7 +106,9 @@ const AddLeadDialog = ({ open, onOpenChange, mode = "add", initialData, onUpdate
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{mode === "edit" ? "Edit Lead" : "Add New Lead"}</DialogTitle>
+          <DialogTitle>
+            {mode === 'edit' ? 'Edit Lead' : 'Add New Lead'}
+          </DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -93,7 +118,9 @@ const AddLeadDialog = ({ open, onOpenChange, mode = "add", initialData, onUpdate
               <Label>Name *</Label>
               <Input
                 value={formData.name}
-                onChange={(e) => setFormData((p) => ({ ...p, name: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((p) => ({ ...p, name: e.target.value }))
+                }
                 required
               />
             </div>
@@ -101,7 +128,9 @@ const AddLeadDialog = ({ open, onOpenChange, mode = "add", initialData, onUpdate
               <Label>Phone *</Label>
               <Input
                 value={formData.phone}
-                onChange={(e) => setFormData((p) => ({ ...p, phone: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((p) => ({ ...p, phone: e.target.value }))
+                }
                 required
               />
             </div>
@@ -111,26 +140,30 @@ const AddLeadDialog = ({ open, onOpenChange, mode = "add", initialData, onUpdate
           <div>
             <Label>Email</Label>
             <Input
-              value={formData.email || ""}
-              onChange={(e) => setFormData((p) => ({ ...p, email: e.target.value }))}
+              value={formData.email || ''}
+              onChange={(e) =>
+                setFormData((p) => ({ ...p, email: e.target.value }))
+              }
             />
           </div>
 
-          {/* PROPERTY TYPE */}
+          {/* PROPERTY TYPES (MULTI) */}
           <div>
-            <Label>Property Type</Label>
+            <Label>Property Types</Label>
             <div className="flex flex-wrap gap-2 mt-2">
               {Object.entries(PROPERTY_TYPE_LABELS).map(([key, label]) => {
                 const typedKey = key as PropertyType;
-                const active = formData.property_type === typedKey;
+                const active = formData.property_types?.includes(typedKey);
 
                 return (
                   <button
                     type="button"
                     key={key}
-                    onClick={() => selectPropertyType(typedKey)}
+                    onClick={() => togglePropertyType(typedKey)}
                     className={`px-3 py-1 rounded-full text-sm border ${
-                      active ? "bg-accent text-accent-foreground" : "bg-background"
+                      active
+                        ? 'bg-accent text-accent-foreground'
+                        : 'bg-background'
                     }`}
                   >
                     {label}
@@ -143,7 +176,12 @@ const AddLeadDialog = ({ open, onOpenChange, mode = "add", initialData, onUpdate
           {/* SOURCE */}
           <div>
             <Label>Source</Label>
-            <Select value={formData.source} onValueChange={(v) => setFormData((p) => ({ ...p, source: v as any }))}>
+            <Select
+              value={formData.source}
+              onValueChange={(v) =>
+                setFormData((p) => ({ ...p, source: v as any }))
+              }
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -191,7 +229,7 @@ const AddLeadDialog = ({ open, onOpenChange, mode = "add", initialData, onUpdate
           <div>
             <Label>Location Preference</Label>
             <Input
-              value={formData.location_preference || ""}
+              value={formData.location_preference || ''}
               onChange={(e) =>
                 setFormData((p) => ({
                   ...p,
@@ -207,7 +245,9 @@ const AddLeadDialog = ({ open, onOpenChange, mode = "add", initialData, onUpdate
             <Label>Temperature</Label>
             <Select
               value={formData.temperature}
-              onValueChange={(v) => setFormData((p) => ({ ...p, temperature: v as any }))}
+              onValueChange={(v) =>
+                setFormData((p) => ({ ...p, temperature: v as any }))
+              }
             >
               <SelectTrigger>
                 <SelectValue />
@@ -224,19 +264,25 @@ const AddLeadDialog = ({ open, onOpenChange, mode = "add", initialData, onUpdate
           <div>
             <Label>Notes</Label>
             <Textarea
-              value={formData.notes || ""}
-              onChange={(e) => setFormData((p) => ({ ...p, notes: e.target.value }))}
+              value={formData.notes || ''}
+              onChange={(e) =>
+                setFormData((p) => ({ ...p, notes: e.target.value }))
+              }
               placeholder="Additional notes..."
             />
           </div>
 
           {/* ACTIONS */}
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
               Cancel
             </Button>
             <Button type="submit" disabled={loading}>
-              {mode === "edit" ? "Update Lead" : "Add Lead"}
+              {mode === 'edit' ? 'Update Lead' : 'Add Lead'}
             </Button>
           </DialogFooter>
         </form>
