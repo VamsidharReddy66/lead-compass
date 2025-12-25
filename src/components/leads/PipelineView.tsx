@@ -68,9 +68,9 @@ const PipelineView = ({ leads, onLeadClick, onLeadStatusChange }: PipelineViewPr
   return (
     <>
       {/* Mobile View - Single Stage with Navigation */}
-      <div className="md:hidden">
+      <div className="md:hidden overflow-hidden">
         {/* Stage Tabs */}
-        <div className="flex items-center gap-1 overflow-x-auto pb-3 mb-3 -mx-4 px-4 scrollbar-hide">
+        <div className="flex items-center gap-1 overflow-x-auto pb-3 mb-3 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           {pipelineStages.map((stage, index) => {
             const config = LEAD_STATUS_CONFIG[stage];
             const count = getLeadsByStage(stage).length;
@@ -131,7 +131,7 @@ const PipelineView = ({ leads, onLeadClick, onLeadStatusChange }: PipelineViewPr
         {/* Stage Content */}
         <div
           className={cn(
-            'bg-secondary/50 rounded-xl p-3 min-h-[400px]',
+            'bg-secondary/50 rounded-xl p-3 min-h-[350px]',
             dragOverStage === currentMobileStage && 'bg-accent/10 ring-2 ring-accent ring-dashed'
           )}
           onDragOver={(e) => handleDragOver(e, currentMobileStage)}
@@ -165,7 +165,7 @@ const PipelineView = ({ leads, onLeadClick, onLeadStatusChange }: PipelineViewPr
 
         {/* Quick Move Buttons */}
         {currentMobileStageLeads.length > 0 && (
-          <div className="mt-3 flex gap-2 overflow-x-auto pb-2 -mx-4 px-4">
+          <div className="mt-3 flex gap-2 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             <span className="text-xs text-muted-foreground py-1.5 flex-shrink-0">Move to:</span>
             {pipelineStages
               .filter((s) => s !== currentMobileStage)
