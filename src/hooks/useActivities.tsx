@@ -103,13 +103,41 @@ export const useActivities = (leadId?: string) => {
           filter: `lead_id=eq.${leadId}`,
         },
         (payload) => {
-            const newActivity = payload.new as Activity;
-            setActivities((prev) => {
-              // Avoid duplicates: if activity already exists (optimistic insert), skip
-              if (prev.some((a) => a.id === newActivity.id)) return prev;
-              return [newActivity, ...prev];
-            });
-          }
+          const newActivity = payload.new as Activity;
+          setActivities((prev) => {
+            // Avoid duplicates: if activity already exists (optimistic insert), skip
+            if (prev.some((a) => a.id === newActivity.id)) return prev;
+            return [newActivity, ...prev];
+          });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'activities',
+          filter: `lead_id=eq.${leadId}`,
+        },
+        (payload) => {
+          const updated = payload.new as Activity;
+          setActivities((prev) =>
+            prev.map((a) => (a.id === updated.id ? updated : a))
+          );
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'activities',
+          filter: `lead_id=eq.${leadId}`,
+        },
+        (payload) => {
+          const deleted = payload.old as { id: string };
+          setActivities((prev) => prev.filter((a) => a.id !== deleted.id));
+        }
       )
       .subscribe();
 

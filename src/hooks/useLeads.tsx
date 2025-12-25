@@ -288,8 +288,40 @@ export const useLeads = () => {
       .channel('leads-changes')
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'leads' },
-        fetchLeads
+        { event: 'INSERT', schema: 'public', table: 'leads' },
+        (payload) => {
+          const newLead = payload.new as any;
+          const mappedLead = {
+            ...newLead,
+            property_types: newLead.property_types || (newLead.property_type ? [newLead.property_type] : []),
+          } as DbLead;
+          setLeads((prev) => {
+            if (prev.some((l) => l.id === mappedLead.id)) return prev;
+            return [mappedLead, ...prev];
+          });
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'leads' },
+        (payload) => {
+          const updated = payload.new as any;
+          const mappedLead = {
+            ...updated,
+            property_types: updated.property_types || (updated.property_type ? [updated.property_type] : []),
+          } as DbLead;
+          setLeads((prev) =>
+            prev.map((l) => (l.id === mappedLead.id ? mappedLead : l))
+          );
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'leads' },
+        (payload) => {
+          const deleted = payload.old as { id: string };
+          setLeads((prev) => prev.filter((l) => l.id !== deleted.id));
+        }
       )
       .subscribe();
 
