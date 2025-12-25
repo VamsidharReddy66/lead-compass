@@ -1,25 +1,16 @@
-import { useMemo, useState } from 'react';
-import { format, isToday, isSameDay } from 'date-fns';
+import { useMemo } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import TasksMeetingsWidget from '@/components/dashboard/TasksMeetingsWidget';
 import { useLeads } from '@/hooks/useLeads';
 import { useMeetings } from '@/hooks/useMeetings';
 import { useActivityNotifications } from '@/hooks/useActivityNotifications';
 import { LEAD_STATUS_CONFIG, LEAD_SOURCE_LABELS, LeadStatus, LeadSource, PropertyType } from '@/types/lead';
-import { TrendingUp, Users, Flame, Calendar, CheckCircle, Loader2, ChevronDown, BarChart3, Target, UserPlus } from 'lucide-react';
+import { TrendingUp, Users, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { Calendar as CalendarComponent } from '@/components/ui/calendar';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
 
 const DashboardPage = () => {
   const { leads: dbLeads, loading: leadsLoading } = useLeads();
   const { meetings, loading: meetingsLoading } = useMeetings();
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   
   // Enable global activity notifications
   useActivityNotifications();
@@ -48,42 +39,6 @@ const DashboardPage = () => {
       updatedAt: lead.updated_at,
     })),
   [dbLeads]);
-
-  // Date-specific stats
-  const dateStats = useMemo(() => {
-    const dateStr = format(selectedDate, 'yyyy-MM-dd');
-    
-    // Leads created on selected date
-    const leadsCreatedOnDate = leads.filter((l) => 
-      l.createdAt.split('T')[0] === dateStr
-    ).length;
-    
-    // Hot leads as of selected date
-    const hotLeadsOnDate = leads.filter((l) => 
-      l.temperature === 'hot' && l.createdAt.split('T')[0] === dateStr
-    ).length;
-    
-    // Follow-ups on selected date
-    const followUpsOnDate = leads.filter((l) => l.followUpDate === dateStr).length;
-    
-    // Meetings on selected date
-    const meetingsOnDate = meetings.filter((m) => {
-      const meetingDate = new Date(m.scheduled_at).toISOString().split('T')[0];
-      return meetingDate === dateStr;
-    }).length;
-    
-    // Deals closed on selected date
-    const closedOnDate = leads.filter((l) => 
-      l.status === 'closed' && l.updatedAt.split('T')[0] === dateStr
-    ).length;
-
-    return {
-      newLeads: leadsCreatedOnDate,
-      hotLeads: hotLeadsOnDate,
-      tasks: followUpsOnDate + meetingsOnDate,
-      closed: closedOnDate,
-    };
-  }, [leads, meetings, selectedDate]);
 
   // Overall stats
   const overallStats = useMemo(() => {
@@ -167,121 +122,9 @@ const DashboardPage = () => {
 
   return (
     <DashboardLayout>
-      {/* Page Header with Date Picker */}
-      <div className="flex items-center justify-between mb-4">
+      {/* Page Header */}
+      <div className="mb-4">
         <h1 className="font-display text-xl font-bold text-foreground">Dashboard</h1>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs">
-              <Calendar className="w-3.5 h-3.5" />
-              {isToday(selectedDate) ? 'Today' : format(selectedDate, 'd MMM')}
-              <ChevronDown className="w-3 h-3" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="end">
-            <CalendarComponent
-              mode="single"
-              selected={selectedDate}
-              onSelect={(date) => date && setSelectedDate(date)}
-              initialFocus
-              className="p-3 pointer-events-auto"
-            />
-          </PopoverContent>
-        </Popover>
-      </div>
-
-      {/* Date-Specific Stats */}
-      <div className="mb-4">
-        <p className="text-xs text-muted-foreground mb-2">
-          {isToday(selectedDate) ? "Today's Activity" : format(selectedDate, 'EEEE, d MMMM')}
-        </p>
-        <div className="grid grid-cols-2 gap-2">
-          <div className="bg-card rounded-xl p-3 shadow-card">
-            <div className="w-7 h-7 rounded-lg bg-status-new/10 flex items-center justify-center mb-1.5">
-              <UserPlus className="w-3.5 h-3.5 text-status-new" />
-            </div>
-            <div className="font-display text-lg font-bold text-foreground">{dateStats.newLeads}</div>
-            <div className="text-[10px] text-muted-foreground">New Leads</div>
-          </div>
-
-          <div className="bg-card rounded-xl p-3 shadow-card">
-            <div className="w-7 h-7 rounded-lg bg-lead-hot/10 flex items-center justify-center mb-1.5">
-              <Flame className="w-3.5 h-3.5 text-lead-hot" />
-            </div>
-            <div className="font-display text-lg font-bold text-foreground">{dateStats.hotLeads}</div>
-            <div className="text-[10px] text-muted-foreground">Hot Leads</div>
-          </div>
-
-          <div className="bg-card rounded-xl p-3 shadow-card">
-            <div className="w-7 h-7 rounded-lg bg-accent/10 flex items-center justify-center mb-1.5">
-              <Calendar className="w-3.5 h-3.5 text-accent" />
-            </div>
-            <div className="font-display text-lg font-bold text-foreground">{dateStats.tasks}</div>
-            <div className="text-[10px] text-muted-foreground">Tasks</div>
-          </div>
-
-          <div className="bg-card rounded-xl p-3 shadow-card">
-            <div className="w-7 h-7 rounded-lg bg-status-closed/10 flex items-center justify-center mb-1.5">
-              <CheckCircle className="w-3.5 h-3.5 text-status-closed" />
-            </div>
-            <div className="font-display text-lg font-bold text-foreground">{dateStats.closed}</div>
-            <div className="text-[10px] text-muted-foreground">Closed</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Overall Stats Section */}
-      <div className="mb-4">
-        <p className="text-xs text-muted-foreground mb-2">Overall Statistics</p>
-        <div className="grid grid-cols-3 gap-2">
-          <div className="bg-card rounded-xl p-3 shadow-card">
-            <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center mb-1.5">
-              <Users className="w-3.5 h-3.5 text-primary" />
-            </div>
-            <div className="font-display text-lg font-bold text-foreground">{overallStats.totalLeads}</div>
-            <div className="text-[10px] text-muted-foreground">Total Leads</div>
-          </div>
-
-          <div className="bg-card rounded-xl p-3 shadow-card">
-            <div className="w-7 h-7 rounded-lg bg-status-closed/10 flex items-center justify-center mb-1.5">
-              <Target className="w-3.5 h-3.5 text-status-closed" />
-            </div>
-            <div className="font-display text-lg font-bold text-foreground">{overallStats.closed}</div>
-            <div className="text-[10px] text-muted-foreground">Total Closed</div>
-          </div>
-
-          <div className="bg-card rounded-xl p-3 shadow-card">
-            <div className="w-7 h-7 rounded-lg bg-accent/10 flex items-center justify-center mb-1.5">
-              <TrendingUp className="w-3.5 h-3.5 text-accent" />
-            </div>
-            <div className="font-display text-lg font-bold text-foreground">{overallStats.conversionRate}%</div>
-            <div className="text-[10px] text-muted-foreground">Conversion</div>
-          </div>
-
-          <div className="bg-card rounded-xl p-3 shadow-card">
-            <div className="w-7 h-7 rounded-lg bg-lead-hot/10 flex items-center justify-center mb-1.5">
-              <Flame className="w-3.5 h-3.5 text-lead-hot" />
-            </div>
-            <div className="font-display text-lg font-bold text-foreground">{overallStats.hotLeads}</div>
-            <div className="text-[10px] text-muted-foreground">Hot</div>
-          </div>
-
-          <div className="bg-card rounded-xl p-3 shadow-card">
-            <div className="w-7 h-7 rounded-lg bg-lead-warm/10 flex items-center justify-center mb-1.5">
-              <BarChart3 className="w-3.5 h-3.5 text-lead-warm" />
-            </div>
-            <div className="font-display text-lg font-bold text-foreground">{overallStats.warmLeads}</div>
-            <div className="text-[10px] text-muted-foreground">Warm</div>
-          </div>
-
-          <div className="bg-card rounded-xl p-3 shadow-card">
-            <div className="w-7 h-7 rounded-lg bg-muted/50 flex items-center justify-center mb-1.5">
-              <Users className="w-3.5 h-3.5 text-muted-foreground" />
-            </div>
-            <div className="font-display text-lg font-bold text-foreground">{overallStats.coldLeads}</div>
-            <div className="text-[10px] text-muted-foreground">Cold</div>
-          </div>
-        </div>
       </div>
 
       {/* Tasks & Meetings Widget */}
