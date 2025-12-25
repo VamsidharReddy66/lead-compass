@@ -13,6 +13,7 @@ import VentureDashboardPage from "./pages/VentureDashboardPage";
 import LeadsPage from "./pages/LeadsPage";
 import CalendarPage from "./pages/CalendarPage";
 import PipelinePage from "./pages/PipelinePage";
+import SettingsPage from "./pages/SettingsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -51,6 +52,11 @@ const App = () => (
             <Route path="/pipeline" element={
               <ProtectedRoute>
                 <PipelinePage />
+              </ProtectedRoute>
+            } />
+            <Route path="/settings" element={
+              <ProtectedRoute>
+                <SettingsPage />
               </ProtectedRoute>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
