@@ -14,39 +14,17 @@ interface StatCardProps {
 const StatCard = ({
   title,
   value,
-  change,
-  changeLabel,
   icon: Icon,
   iconColor = 'text-accent',
   iconBgColor = 'bg-accent/10',
 }: StatCardProps) => {
-  const isPositive = change && change > 0;
-  const isNegative = change && change < 0;
-
   return (
-    <div className="bg-card rounded-2xl p-6 shadow-card hover:shadow-card-hover transition-all duration-200">
-      <div className="flex items-start justify-between mb-4">
-        <div className={cn('w-12 h-12 rounded-xl flex items-center justify-center', iconBgColor)}>
-          <Icon className={cn('w-6 h-6', iconColor)} />
-        </div>
-        {change !== undefined && (
-          <div
-            className={cn(
-              'flex items-center gap-1 text-sm font-medium px-2 py-1 rounded-full',
-              isPositive && 'text-status-closed bg-status-closed/10',
-              isNegative && 'text-status-lost bg-status-lost/10',
-              !isPositive && !isNegative && 'text-muted-foreground bg-secondary'
-            )}
-          >
-            {isPositive && <TrendingUp className="w-3.5 h-3.5" />}
-            {isNegative && <TrendingDown className="w-3.5 h-3.5" />}
-            {Math.abs(change)}%
-          </div>
-        )}
+    <div className="bg-card rounded-xl p-3 shadow-card">
+      <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center mb-2', iconBgColor)}>
+        <Icon className={cn('w-4 h-4', iconColor)} />
       </div>
-      <div className="font-display text-3xl font-bold text-foreground mb-1">{value}</div>
-      <div className="text-sm text-muted-foreground">{title}</div>
-      {changeLabel && <div className="text-xs text-muted-foreground mt-1">{changeLabel}</div>}
+      <div className="font-display text-xl font-bold text-foreground">{value}</div>
+      <div className="text-xs text-muted-foreground">{title}</div>
     </div>
   );
 };
@@ -67,43 +45,45 @@ const DashboardStats = ({
   conversionRate,
 }: DashboardStatsProps) => {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-      <StatCard
-        title="Total Leads"
-        value={totalLeads}
-        change={12}
-        changeLabel="vs last month"
-        icon={Users}
-        iconColor="text-status-new"
-        iconBgColor="bg-status-new/10"
-      />
-      <StatCard
-        title="Hot Leads"
-        value={hotLeads}
-        change={8}
-        icon={Flame}
-        iconColor="text-lead-hot"
-        iconBgColor="bg-lead-hot/10"
-      />
-      <StatCard
-        title="Today's Follow-ups"
-        value={todayFollowUps}
-        icon={Calendar}
-        iconColor="text-accent"
-        iconBgColor="bg-accent/10"
-      />
-      <StatCard
-        title="Deals Closed"
-        value={closedDeals}
-        change={15}
-        icon={CheckCircle}
-        iconColor="text-status-closed"
-        iconBgColor="bg-status-closed/10"
-      />
+    <div className="space-y-3">
+      {/* Top row - 2 cards */}
+      <div className="grid grid-cols-2 gap-3">
+        <StatCard
+          title="Total Leads"
+          value={totalLeads}
+          icon={Users}
+          iconColor="text-status-new"
+          iconBgColor="bg-status-new/10"
+        />
+        <StatCard
+          title="Hot Leads"
+          value={hotLeads}
+          icon={Flame}
+          iconColor="text-lead-hot"
+          iconBgColor="bg-lead-hot/10"
+        />
+      </div>
+      {/* Second row - 2 cards */}
+      <div className="grid grid-cols-2 gap-3">
+        <StatCard
+          title="Today's Tasks"
+          value={todayFollowUps}
+          icon={Calendar}
+          iconColor="text-accent"
+          iconBgColor="bg-accent/10"
+        />
+        <StatCard
+          title="Deals Closed"
+          value={closedDeals}
+          icon={CheckCircle}
+          iconColor="text-status-closed"
+          iconBgColor="bg-status-closed/10"
+        />
+      </div>
+      {/* Bottom row - 1 card */}
       <StatCard
         title="Conversion Rate"
         value={`${conversionRate}%`}
-        change={3}
         icon={TrendingUp}
         iconColor="text-status-negotiation"
         iconBgColor="bg-status-negotiation/10"
