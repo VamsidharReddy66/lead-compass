@@ -57,6 +57,7 @@ const LeadDetailPanel = ({ lead, onClose, onStatusChange }: LeadDetailPanelProps
   const [showScheduleDialog, setShowScheduleDialog] = useState(false);
   const [showOutcomeDialog, setShowOutcomeDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [isRescheduleMode, setIsRescheduleMode] = useState(false);
 
   const [selectedOutcome, setSelectedOutcome] = useState('');
   const [outcomeNote, setOutcomeNote] = useState('');
@@ -96,7 +97,7 @@ const LeadDetailPanel = ({ lead, onClose, onStatusChange }: LeadDetailPanelProps
       await createActivity({
         lead_id: lead.id,
         activity_type: 'meeting_outcome',
-        description: `${selectedOutcome}${outcomeNote ? ': ' + outcomeNote : ''}`,
+        description: `Meeting outcome: ${selectedOutcome}${outcomeNote ? ' - ' + outcomeNote : ''} (${formatDateTime(activeMeeting.scheduled_at)})`,
         previous_value: null,
         new_value: selectedOutcome,
         meeting_id: activeMeeting.id,
@@ -121,7 +122,7 @@ const LeadDetailPanel = ({ lead, onClose, onStatusChange }: LeadDetailPanelProps
         await createActivity({
           lead_id: lead.id,
           activity_type: 'meeting_outcome',
-          description: `${selectedOutcome}${outcomeNote ? ': ' + outcomeNote : ''}`,
+          description: `Meeting outcome: ${selectedOutcome}${outcomeNote ? ' - ' + outcomeNote : ''} (${formatDateTime(activeMeeting.scheduled_at)})`,
           previous_value: null,
           new_value: selectedOutcome,
           meeting_id: activeMeeting.id,
@@ -134,12 +135,25 @@ const LeadDetailPanel = ({ lead, onClose, onStatusChange }: LeadDetailPanelProps
       }
     }
 
-    // Close outcome dialog and open schedule dialog after a short delay
+    // Close outcome dialog and open schedule dialog after a short delay (new meeting, not reschedule)
     setShowOutcomeDialog(false);
+    setIsRescheduleMode(false);
     setTimeout(() => setShowScheduleDialog(true), 400);
     setSelectedOutcome('');
     setOutcomeNote('');
     setActiveMeeting(null);
+  };
+
+  const formatDateTime = (iso: string) => {
+    const d = new Date(iso);
+    return d.toLocaleString('en-IN', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
   };
 
   const formatTime = (iso: string) =>
@@ -210,7 +224,10 @@ const LeadDetailPanel = ({ lead, onClose, onStatusChange }: LeadDetailPanelProps
             variant="outline"
             size="sm"
             className="flex-1"
-            onClick={() => setShowScheduleDialog(true)}
+            onClick={() => {
+              setIsRescheduleMode(false);
+              setShowScheduleDialog(true);
+            }}
             disabled={hasActiveMeeting}
             title={hasActiveMeeting ? 'Complete or reschedule existing meeting first' : 'Schedule a meeting'}
           >
@@ -349,6 +366,7 @@ const LeadDetailPanel = ({ lead, onClose, onStatusChange }: LeadDetailPanelProps
                 className="w-full text-xs"
                 onClick={() => {
                   setActiveMeeting(nextMeeting);
+                  setIsRescheduleMode(true);
                   setShowScheduleDialog(true);
                 }}
               >
@@ -458,9 +476,17 @@ const LeadDetailPanel = ({ lead, onClose, onStatusChange }: LeadDetailPanelProps
 
       <ScheduleMeetingDialog
         open={showScheduleDialog}
-        onOpenChange={setShowScheduleDialog}
+        onOpenChange={(open) => {
+          setShowScheduleDialog(open);
+          if (!open) {
+            setIsRescheduleMode(false);
+            setActiveMeeting(null);
+          }
+        }}
         leadId={lead.id}
         leadName={lead.name}
+        reschedulesMeetingId={isRescheduleMode && activeMeeting ? activeMeeting.id : undefined}
+        reschedulesCurrentDate={isRescheduleMode && activeMeeting ? activeMeeting.scheduled_at : undefined}
       />
     </div>
   );

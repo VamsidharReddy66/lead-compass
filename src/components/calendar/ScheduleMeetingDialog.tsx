@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useMeetings, CreateMeetingInput } from '@/hooks/useMeetings';
 import { useLeads } from '@/hooks/useLeads';
+import { useActivities } from '@/hooks/useActivities';
 import { Search, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -16,6 +17,9 @@ interface ScheduleMeetingDialogProps {
   leadId?: string;
   leadName?: string;
   defaultDate?: Date;
+  /** If provided, dialog is in reschedule mode and will update existing meeting */
+  reschedulesMeetingId?: string;
+  reschedulesCurrentDate?: string;
 }
 
 const ScheduleMeetingDialog = ({
@@ -24,8 +28,11 @@ const ScheduleMeetingDialog = ({
   leadId,
   leadName,
   defaultDate,
+  reschedulesMeetingId,
+  reschedulesCurrentDate,
 }: ScheduleMeetingDialogProps) => {
-  const { createMeeting } = useMeetings();
+  const { createMeeting, rescheduleMeeting } = useMeetings();
+  const { createActivity } = useActivities(leadId);
   const { searchLeads } = useLeads();
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -87,12 +94,43 @@ const ScheduleMeetingDialog = ({
     setShowSearchResults(false);
   };
 
+  const formatDateTime = (iso: string) => {
+    const d = new Date(iso);
+    return d.toLocaleString('en-IN', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedLead) return;
 
     setLoading(true);
     const scheduled_at = new Date(`${formData.date}T${formData.time}`).toISOString();
+
+    // Reschedule mode: update existing meeting
+    if (reschedulesMeetingId) {
+      const success = await rescheduleMeeting(reschedulesMeetingId, scheduled_at);
+      if (success && leadId) {
+        // Log reschedule activity with old and new date/time
+        await createActivity({
+          lead_id: leadId,
+          activity_type: 'meeting_rescheduled',
+          description: `Meeting rescheduled from ${formatDateTime(reschedulesCurrentDate || '')} to ${formatDateTime(scheduled_at)}`,
+          previous_value: reschedulesCurrentDate || null,
+          new_value: scheduled_at,
+          meeting_id: reschedulesMeetingId,
+        });
+      }
+      setLoading(false);
+      if (success) onOpenChange(false);
+      return;
+    }
     
     const input: CreateMeetingInput = {
       lead_id: selectedLead.id,
@@ -108,6 +146,15 @@ const ScheduleMeetingDialog = ({
     setLoading(false);
     
     if (result) {
+      // Log activity for new meeting scheduled
+      await createActivity({
+        lead_id: selectedLead.id,
+        activity_type: 'meeting_scheduled',
+        description: `Meeting scheduled for ${formatDateTime(scheduled_at)}`,
+        previous_value: null,
+        new_value: scheduled_at,
+        meeting_id: result.id,
+      });
       onOpenChange(false);
       setSelectedLead(null);
       setFormData({
@@ -126,7 +173,7 @@ const ScheduleMeetingDialog = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Schedule Meeting</DialogTitle>
+          <DialogTitle>{reschedulesMeetingId ? 'Reschedule Meeting' : 'Schedule Meeting'}</DialogTitle>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -283,7 +330,7 @@ const ScheduleMeetingDialog = ({
               Cancel
             </Button>
             <Button type="submit" disabled={loading || !selectedLead}>
-              {loading ? 'Scheduling...' : 'Schedule'}
+              {loading ? (reschedulesMeetingId ? 'Rescheduling...' : 'Scheduling...') : (reschedulesMeetingId ? 'Reschedule' : 'Schedule')}
             </Button>
           </DialogFooter>
         </form>
