@@ -63,9 +63,12 @@ const AgentPerformanceCard = ({ agent, onUpdate }: AgentPerformanceCardProps) =>
     }
   };
 
-  const getInitials = (name: string | null, email?: string | null) => {
+  const getInitials = (name: string | null, phone?: string | null, email?: string | null) => {
     if (name) {
       return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    }
+    if (phone) {
+      return phone.slice(-2);
     }
     if (email) {
       return email.slice(0, 2).toUpperCase();
@@ -100,12 +103,12 @@ const AgentPerformanceCard = ({ agent, onUpdate }: AgentPerformanceCardProps) =>
             <Avatar className="w-10 h-10">
               <AvatarImage src={agent.profile?.avatar_url || undefined} />
               <AvatarFallback className={`font-medium ${isPending ? 'bg-amber-500/20 text-amber-500' : 'bg-accent/20 text-accent'}`}>
-                {getInitials(agent.profile?.full_name, agent.email || agent.profile?.email)}
+                {getInitials(agent.profile?.full_name, agent.phone || agent.profile?.phone, agent.email || agent.profile?.email)}
               </AvatarFallback>
             </Avatar>
             <div>
               <h3 className="font-medium text-foreground">
-                {agent.profile?.full_name || agent.email || 'Unknown'}
+                {agent.profile?.full_name || agent.phone || agent.email || 'Unknown'}
               </h3>
               {getStatusBadge()}
             </div>
@@ -142,16 +145,16 @@ const AgentPerformanceCard = ({ agent, onUpdate }: AgentPerformanceCardProps) =>
         </div>
 
         <div className="space-y-2 text-sm text-muted-foreground">
+          {(agent.profile?.phone || agent.phone) && (
+            <div className="flex items-center gap-2">
+              <Phone className="w-4 h-4" />
+              <span>{agent.profile?.phone || agent.phone}</span>
+            </div>
+          )}
           {(agent.profile?.email || agent.email) && (
             <div className="flex items-center gap-2">
               <Mail className="w-4 h-4" />
               <span className="truncate">{agent.profile?.email || agent.email}</span>
-            </div>
-          )}
-          {agent.profile?.phone && (
-            <div className="flex items-center gap-2">
-              <Phone className="w-4 h-4" />
-              <span>{agent.profile.phone}</span>
             </div>
           )}
         </div>
