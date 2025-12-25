@@ -90,14 +90,26 @@ const LeadDetailPanel = ({ lead, onClose, onStatusChange }: LeadDetailPanelProps
     await onStatusChange(lead.id, newStatus);
   };
 
+  const formatNow = () => {
+    return new Date().toLocaleString('en-IN', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+  };
+
   const handleSaveOutcome = async () => {
     if (!selectedOutcome || !activeMeeting) return;
 
     try {
+      const now = formatNow();
       await createActivity({
         lead_id: lead.id,
         activity_type: 'meeting_outcome',
-        description: `Meeting outcome: ${selectedOutcome}${outcomeNote ? ' - ' + outcomeNote : ''} (${formatDateTime(activeMeeting.scheduled_at)})`,
+        description: `Outcome: ${selectedOutcome}${outcomeNote ? ' - ' + outcomeNote : ''} | Meeting: ${formatDateTime(activeMeeting.scheduled_at)} | Updated: ${now}`,
         previous_value: null,
         new_value: selectedOutcome,
         meeting_id: activeMeeting.id,
@@ -116,13 +128,14 @@ const LeadDetailPanel = ({ lead, onClose, onStatusChange }: LeadDetailPanelProps
   };
 
   const handleNextSchedule = async () => {
-    // Save outcome if selected, then proceed to scheduling
+    // Save outcome if selected, then mark meeting as completed
     if (selectedOutcome && activeMeeting) {
       try {
+        const now = formatNow();
         await createActivity({
           lead_id: lead.id,
           activity_type: 'meeting_outcome',
-          description: `Meeting outcome: ${selectedOutcome}${outcomeNote ? ' - ' + outcomeNote : ''} (${formatDateTime(activeMeeting.scheduled_at)})`,
+          description: `Outcome: ${selectedOutcome}${outcomeNote ? ' - ' + outcomeNote : ''} | Meeting: ${formatDateTime(activeMeeting.scheduled_at)} | Updated: ${now}`,
           previous_value: null,
           new_value: selectedOutcome,
           meeting_id: activeMeeting.id,
@@ -138,10 +151,10 @@ const LeadDetailPanel = ({ lead, onClose, onStatusChange }: LeadDetailPanelProps
     // Close outcome dialog and open schedule dialog after a short delay (new meeting, not reschedule)
     setShowOutcomeDialog(false);
     setIsRescheduleMode(false);
-    setTimeout(() => setShowScheduleDialog(true), 400);
     setSelectedOutcome('');
     setOutcomeNote('');
     setActiveMeeting(null);
+    setTimeout(() => setShowScheduleDialog(true), 400);
   };
 
   const formatDateTime = (iso: string) => {
