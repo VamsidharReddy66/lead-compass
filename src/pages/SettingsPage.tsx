@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/hooks/useAuth';
+import { useRazorpay } from '@/hooks/useRazorpay';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import {
@@ -34,6 +35,7 @@ import { Badge } from '@/components/ui/badge';
 
 const SettingsPage = () => {
   const { profile, user } = useAuth();
+  const { initiatePayment, isLoading: isPaymentLoading } = useRazorpay();
   const [isLoading, setIsLoading] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -625,11 +627,24 @@ const SettingsPage = () => {
                       </li>
                     ))}
                   </ul>
-                  <Button variant="outline" size="sm" className="w-full h-8 text-xs">Choose</Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full h-8 text-xs"
+                    disabled={isPaymentLoading}
+                    onClick={() => initiatePayment({
+                      amount: 499,
+                      planName: 'Starter',
+                      userId: user?.id,
+                      onSuccess: () => toast.success('Subscribed to Starter plan!'),
+                    })}
+                  >
+                    {isPaymentLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Choose'}
+                  </Button>
                 </CardContent>
               </Card>
 
-              <Card className="rounded-xl border-accent shadow-md">
+              <Card className="rounded-xl border-accent shadow-md relative">
                 <div className="absolute -top-2 left-1/2 -translate-x-1/2">
                   <Badge className="bg-accent text-accent-foreground text-xs">
                     <Crown className="w-2.5 h-2.5 mr-0.5" />
@@ -652,7 +667,19 @@ const SettingsPage = () => {
                       </li>
                     ))}
                   </ul>
-                  <Button size="sm" className="w-full h-8 text-xs">Choose</Button>
+                  <Button 
+                    size="sm" 
+                    className="w-full h-8 text-xs"
+                    disabled={isPaymentLoading}
+                    onClick={() => initiatePayment({
+                      amount: 999,
+                      planName: 'Professional',
+                      userId: user?.id,
+                      onSuccess: () => toast.success('Subscribed to Professional plan!'),
+                    })}
+                  >
+                    {isPaymentLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Choose'}
+                  </Button>
                 </CardContent>
               </Card>
 
@@ -673,7 +700,20 @@ const SettingsPage = () => {
                       </li>
                     ))}
                   </ul>
-                  <Button variant="outline" size="sm" className="w-full h-8 text-xs">Contact</Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full h-8 text-xs"
+                    disabled={isPaymentLoading}
+                    onClick={() => initiatePayment({
+                      amount: 2499,
+                      planName: 'Enterprise',
+                      userId: user?.id,
+                      onSuccess: () => toast.success('Subscribed to Enterprise plan!'),
+                    })}
+                  >
+                    {isPaymentLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Choose'}
+                  </Button>
                 </CardContent>
               </Card>
             </div>
