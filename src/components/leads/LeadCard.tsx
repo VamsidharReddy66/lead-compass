@@ -25,12 +25,16 @@ const LeadCard = ({ lead, onClick, isDragging }: LeadCardProps) => {
   const TempIcon = temperatureIcons[lead.temperature];
   const statusConfig = LEAD_STATUS_CONFIG[lead.status];
 
+  // Check if lead is overdue (has a follow-up date in the past)
+  const isOverdue = lead.followUpDate && new Date(lead.followUpDate) < new Date();
+
   return (
     <div
       onClick={onClick}
       className={cn(
         'bg-card rounded-xl p-4 shadow-card hover:shadow-card-hover transition-all duration-200 cursor-pointer group',
-        isDragging && 'opacity-50 rotate-2 scale-105'
+        isDragging && 'opacity-50 rotate-2 scale-105',
+        isOverdue && 'border-l-4 border-l-destructive bg-destructive/5'
       )}
     >
       {/* Header */}
@@ -71,9 +75,15 @@ const LeadCard = ({ lead, onClick, isDragging }: LeadCardProps) => {
 
       {/* Follow-up */}
       {lead.followUpDate && (
-        <div className="flex items-center gap-2 text-xs text-accent bg-accent/10 px-2 py-1.5 rounded-lg">
+        <div className={cn(
+          "flex items-center gap-2 text-xs px-2 py-1.5 rounded-lg",
+          isOverdue 
+            ? "text-destructive bg-destructive/10" 
+            : "text-accent bg-accent/10"
+        )}>
           <Calendar className="w-3.5 h-3.5" />
-          Follow-up: {new Date(lead.followUpDate).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}
+          {isOverdue ? 'Overdue: ' : 'Follow-up: '}
+          {new Date(lead.followUpDate).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}
           {lead.followUpTime && ` at ${lead.followUpTime}`}
         </div>
       )}
