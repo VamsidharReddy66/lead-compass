@@ -104,53 +104,56 @@ const AddLeadDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>
+      <DialogContent className="sm:max-w-sm p-4 rounded-2xl max-h-[calc(100vh-120px)] overflow-y-auto my-[60px]">
+        <DialogHeader className="pb-2">
+          <DialogTitle className="text-base">
             {mode === 'edit' ? 'Edit Lead' : 'Add New Lead'}
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-3">
           {/* NAME + PHONE */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label>Name *</Label>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Name *</Label>
               <Input
                 value={formData.name}
                 onChange={(e) =>
                   setFormData((p) => ({ ...p, name: e.target.value }))
                 }
+                className="h-8 text-sm"
                 required
               />
             </div>
-            <div>
-              <Label>Phone *</Label>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Phone *</Label>
               <Input
                 value={formData.phone}
                 onChange={(e) =>
                   setFormData((p) => ({ ...p, phone: e.target.value }))
                 }
+                className="h-8 text-sm"
                 required
               />
             </div>
           </div>
 
           {/* EMAIL */}
-          <div>
-            <Label>Email</Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Email</Label>
             <Input
               value={formData.email || ''}
               onChange={(e) =>
                 setFormData((p) => ({ ...p, email: e.target.value }))
               }
+              className="h-8 text-sm"
             />
           </div>
 
           {/* PROPERTY TYPES (MULTI) */}
-          <div>
-            <Label>Property Types</Label>
-            <div className="flex flex-wrap gap-2 mt-2">
+          <div className="space-y-1.5">
+            <Label className="text-xs">Property Types</Label>
+            <div className="flex flex-wrap gap-1.5 mt-1">
               {Object.entries(PROPERTY_TYPE_LABELS).map(([key, label]) => {
                 const typedKey = key as PropertyType;
                 const active = formData.property_types?.includes(typedKey);
@@ -160,10 +163,10 @@ const AddLeadDialog = ({
                     type="button"
                     key={key}
                     onClick={() => togglePropertyType(typedKey)}
-                    className={`px-3 py-1 rounded-full text-sm border ${
+                    className={`px-2.5 py-1 rounded-full text-xs border transition-colors ${
                       active
                         ? 'bg-accent text-accent-foreground'
-                        : 'bg-background'
+                        : 'bg-background hover:bg-muted'
                     }`}
                   >
                     {label}
@@ -173,32 +176,52 @@ const AddLeadDialog = ({
             </div>
           </div>
 
-          {/* SOURCE */}
-          <div>
-            <Label>Source</Label>
-            <Select
-              value={formData.source}
-              onValueChange={(v) =>
-                setFormData((p) => ({ ...p, source: v as any }))
-              }
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(LEAD_SOURCE_LABELS).map(([k, l]) => (
-                  <SelectItem key={k} value={k}>
-                    {l}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          {/* SOURCE + TEMPERATURE */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Source</Label>
+              <Select
+                value={formData.source}
+                onValueChange={(v) =>
+                  setFormData((p) => ({ ...p, source: v as any }))
+                }
+              >
+                <SelectTrigger className="h-8 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(LEAD_SOURCE_LABELS).map(([k, l]) => (
+                    <SelectItem key={k} value={k}>
+                      {l}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Temperature</Label>
+              <Select
+                value={formData.temperature}
+                onValueChange={(v) =>
+                  setFormData((p) => ({ ...p, temperature: v as any }))
+                }
+              >
+                <SelectTrigger className="h-8 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="hot">🔥 Hot</SelectItem>
+                  <SelectItem value="warm">🌤 Warm</SelectItem>
+                  <SelectItem value="cold">❄ Cold</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           {/* BUDGET */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label>Budget Min (₹)</Label>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Budget Min (₹)</Label>
               <Input
                 type="number"
                 value={formData.budget_min}
@@ -208,10 +231,11 @@ const AddLeadDialog = ({
                     budget_min: Number(e.target.value),
                   }))
                 }
+                className="h-8 text-sm"
               />
             </div>
-            <div>
-              <Label>Budget Max (₹)</Label>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Budget Max (₹)</Label>
               <Input
                 type="number"
                 value={formData.budget_max}
@@ -221,13 +245,14 @@ const AddLeadDialog = ({
                     budget_max: Number(e.target.value),
                   }))
                 }
+                className="h-8 text-sm"
               />
             </div>
           </div>
 
           {/* LOCATION */}
-          <div>
-            <Label>Location Preference</Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Location</Label>
             <Input
               value={formData.location_preference || ''}
               onChange={(e) =>
@@ -237,52 +262,36 @@ const AddLeadDialog = ({
                 }))
               }
               placeholder="Preferred location"
+              className="h-8 text-sm"
             />
           </div>
 
-          {/* TEMPERATURE */}
-          <div>
-            <Label>Temperature</Label>
-            <Select
-              value={formData.temperature}
-              onValueChange={(v) =>
-                setFormData((p) => ({ ...p, temperature: v as any }))
-              }
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="hot">🔥 Hot</SelectItem>
-                <SelectItem value="warm">🌤 Warm</SelectItem>
-                <SelectItem value="cold">❄ Cold</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
           {/* NOTES */}
-          <div>
-            <Label>Notes</Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Notes</Label>
             <Textarea
               value={formData.notes || ''}
               onChange={(e) =>
                 setFormData((p) => ({ ...p, notes: e.target.value }))
               }
               placeholder="Additional notes..."
+              rows={2}
+              className="text-sm resize-none"
             />
           </div>
 
           {/* ACTIONS */}
-          <DialogFooter>
+          <DialogFooter className="pt-2 gap-2">
             <Button
               type="button"
               variant="outline"
+              size="sm"
               onClick={() => onOpenChange(false)}
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={loading}>
-              {mode === 'edit' ? 'Update Lead' : 'Add Lead'}
+            <Button type="submit" size="sm" disabled={loading}>
+              {loading ? 'Saving...' : mode === 'edit' ? 'Update' : 'Add Lead'}
             </Button>
           </DialogFooter>
         </form>
