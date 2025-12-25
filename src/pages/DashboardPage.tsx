@@ -1,13 +1,40 @@
 import { useMemo } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import TasksMeetingsWidget from '@/components/dashboard/TasksMeetingsWidget';
-import { mockLeads } from '@/data/mockData';
-import { LEAD_STATUS_CONFIG, LEAD_SOURCE_LABELS, LeadStatus, LeadSource } from '@/types/lead';
-import { TrendingUp, Users, Target, ArrowUpRight, Flame, Calendar, CheckCircle } from 'lucide-react';
+import { useLeads } from '@/hooks/useLeads';
+import { useMeetings } from '@/hooks/useMeetings';
+import { LEAD_STATUS_CONFIG, LEAD_SOURCE_LABELS, LeadStatus, LeadSource, PropertyType } from '@/types/lead';
+import { TrendingUp, Users, Flame, Calendar, CheckCircle, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const DashboardPage = () => {
-  const leads = mockLeads;
+  const { leads: dbLeads, loading: leadsLoading } = useLeads();
+  const { meetings, loading: meetingsLoading } = useMeetings();
+
+  // Map DB leads to UI format for stats calculation
+  const leads = useMemo(() => 
+    dbLeads.map((lead) => ({
+      id: lead.id,
+      name: lead.name,
+      phone: lead.phone,
+      email: lead.email || '',
+      propertyType: (lead.property_types?.[0] ?? 'flat') as PropertyType,
+      propertyTypes: (lead.property_types ?? ['flat']) as PropertyType[],
+      budgetMin: Number(lead.budget_min) || 0,
+      budgetMax: Number(lead.budget_max) || 0,
+      locationPreference: lead.location_preference || '',
+      source: lead.source,
+      assignedAgentId: lead.assigned_agent_id,
+      status: lead.status as LeadStatus,
+      followUpDate: lead.follow_up_date,
+      followUpTime: lead.follow_up_time,
+      notes: lead.notes || '',
+      tags: lead.tags || [],
+      temperature: lead.temperature,
+      createdAt: lead.created_at,
+      updatedAt: lead.updated_at,
+    })),
+  [dbLeads]);
 
   const stats = useMemo(() => {
     const today = new Date().toISOString().split('T')[0];
@@ -45,6 +72,14 @@ const DashboardPage = () => {
     const hotLeads = leads.filter((l) => l.temperature === 'hot').length;
     const todayFollowUps = leads.filter((l) => l.followUpDate === today).length;
 
+    // Meetings stats
+    const scheduledMeetings = meetings.filter((m) => m.status === 'scheduled').length;
+    const completedMeetings = meetings.filter((m) => m.status === 'completed').length;
+    const todayMeetings = meetings.filter((m) => {
+      const meetingDate = new Date(m.scheduled_at).toISOString().split('T')[0];
+      return meetingDate === today && m.status === 'scheduled';
+    }).length;
+
     return {
       statusBreakdown,
       sourceBreakdown,
@@ -54,26 +89,44 @@ const DashboardPage = () => {
         siteVisits,
         closed,
       },
-      conversionRate: Math.round((closed / totalLeads) * 100),
+      conversionRate: totalLeads > 0 ? Math.round((closed / totalLeads) * 100) : 0,
       hotLeads,
       todayFollowUps,
       closedDeals: closed,
+      scheduledMeetings,
+      completedMeetings,
+      todayMeetings,
     };
-  }, [leads]);
+  }, [leads, meetings]);
 
-  const funnelSteps = [
-    { label: 'Total Leads', value: stats.funnel.total, percentage: 100 },
-    { label: 'Contacted', value: stats.funnel.contacted, percentage: Math.round((stats.funnel.contacted / stats.funnel.total) * 100) },
-    { label: 'Site Visits', value: stats.funnel.siteVisits, percentage: Math.round((stats.funnel.siteVisits / stats.funnel.total) * 100) },
-    { label: 'Closed', value: stats.funnel.closed, percentage: Math.round((stats.funnel.closed / stats.funnel.total) * 100) },
-  ];
+  const funnelSteps = useMemo(() => {
+    const total = stats.funnel.total || 1; // Avoid division by zero
+    return [
+      { label: 'Total Leads', value: stats.funnel.total, percentage: 100 },
+      { label: 'Contacted', value: stats.funnel.contacted, percentage: Math.round((stats.funnel.contacted / total) * 100) },
+      { label: 'Site Visits', value: stats.funnel.siteVisits, percentage: Math.round((stats.funnel.siteVisits / total) * 100) },
+      { label: 'Closed', value: stats.funnel.closed, percentage: Math.round((stats.funnel.closed / total) * 100) },
+    ];
+  }, [stats.funnel]);
+
+  const isLoading = leadsLoading || meetingsLoading;
+
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-[60vh]">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
       {/* Page Header */}
       <div className="mb-6">
         <h1 className="font-display text-2xl font-bold text-foreground mb-1">Dashboard</h1>
-        <p className="text-muted-foreground">Track your performance and lead conversion metrics.</p>
+        <p className="text-muted-foreground">Track your performance and lead conversion metrics in real-time.</p>
       </div>
 
       {/* KPI Cards */}
@@ -82,10 +135,6 @@ const DashboardPage = () => {
           <div className="flex items-center justify-between mb-4">
             <div className="w-12 h-12 rounded-xl bg-status-new/10 flex items-center justify-center">
               <Users className="w-6 h-6 text-status-new" />
-            </div>
-            <div className="flex items-center gap-1 text-sm font-medium text-status-closed">
-              <ArrowUpRight className="w-4 h-4" />
-              12%
             </div>
           </div>
           <div className="font-display text-3xl font-bold text-foreground mb-1">{leads.length}</div>
@@ -96,10 +145,6 @@ const DashboardPage = () => {
           <div className="flex items-center justify-between mb-4">
             <div className="w-12 h-12 rounded-xl bg-lead-hot/10 flex items-center justify-center">
               <Flame className="w-6 h-6 text-lead-hot" />
-            </div>
-            <div className="flex items-center gap-1 text-sm font-medium text-status-closed">
-              <ArrowUpRight className="w-4 h-4" />
-              8%
             </div>
           </div>
           <div className="font-display text-3xl font-bold text-foreground mb-1">{stats.hotLeads}</div>
@@ -112,18 +157,16 @@ const DashboardPage = () => {
               <Calendar className="w-6 h-6 text-accent" />
             </div>
           </div>
-          <div className="font-display text-3xl font-bold text-foreground mb-1">{stats.todayFollowUps}</div>
-          <div className="text-sm text-muted-foreground">Today's Follow-ups</div>
+          <div className="font-display text-3xl font-bold text-foreground mb-1">
+            {stats.todayFollowUps + stats.todayMeetings}
+          </div>
+          <div className="text-sm text-muted-foreground">Today's Tasks</div>
         </div>
 
         <div className="bg-card rounded-2xl p-6 shadow-card">
           <div className="flex items-center justify-between mb-4">
             <div className="w-12 h-12 rounded-xl bg-status-closed/10 flex items-center justify-center">
               <CheckCircle className="w-6 h-6 text-status-closed" />
-            </div>
-            <div className="flex items-center gap-1 text-sm font-medium text-status-closed">
-              <ArrowUpRight className="w-4 h-4" />
-              15%
             </div>
           </div>
           <div className="font-display text-3xl font-bold text-foreground mb-1">{stats.closedDeals}</div>
@@ -134,10 +177,6 @@ const DashboardPage = () => {
           <div className="flex items-center justify-between mb-4">
             <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center">
               <TrendingUp className="w-6 h-6 text-accent" />
-            </div>
-            <div className="flex items-center gap-1 text-sm font-medium text-status-closed">
-              <ArrowUpRight className="w-4 h-4" />
-              3%
             </div>
           </div>
           <div className="font-display text-3xl font-bold text-foreground mb-1">
@@ -180,7 +219,7 @@ const DashboardPage = () => {
           <div className="space-y-3">
             {Object.entries(stats.statusBreakdown).map(([status, count]) => {
               const config = LEAD_STATUS_CONFIG[status as LeadStatus];
-              const percentage = Math.round((count / leads.length) * 100);
+              const percentage = leads.length > 0 ? Math.round((count / leads.length) * 100) : 0;
               return (
                 <div key={status} className="flex items-center gap-3">
                   <div className={cn('w-3 h-3 rounded-full', config.bgColor.replace('/10', ''))} />
@@ -196,25 +235,31 @@ const DashboardPage = () => {
         {/* Lead Sources */}
         <div className="bg-card rounded-2xl p-6 shadow-card lg:col-span-2">
           <h3 className="font-display font-semibold text-foreground mb-6">Lead Sources</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {Object.entries(stats.sourceBreakdown).map(([source, count]) => {
-              const percentage = Math.round((count / leads.length) * 100);
-              return (
-                <div key={source} className="bg-secondary/50 rounded-xl p-4">
-                  <div className="text-2xl font-bold text-foreground mb-1">{count}</div>
-                  <div className="text-sm text-muted-foreground mb-2">
-                    {LEAD_SOURCE_LABELS[source as LeadSource]}
+          {Object.keys(stats.sourceBreakdown).length > 0 ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {Object.entries(stats.sourceBreakdown).map(([source, count]) => {
+                const percentage = leads.length > 0 ? Math.round((count / leads.length) * 100) : 0;
+                return (
+                  <div key={source} className="bg-secondary/50 rounded-xl p-4">
+                    <div className="text-2xl font-bold text-foreground mb-1">{count}</div>
+                    <div className="text-sm text-muted-foreground mb-2">
+                      {LEAD_SOURCE_LABELS[source as LeadSource] || source}
+                    </div>
+                    <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-accent rounded-full"
+                        style={{ width: `${percentage}%` }}
+                      />
+                    </div>
                   </div>
-                  <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-accent rounded-full"
-                      style={{ width: `${percentage}%` }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="text-muted-foreground text-center py-8">
+              No leads yet. Add leads to see source distribution.
+            </p>
+          )}
         </div>
       </div>
     </DashboardLayout>
