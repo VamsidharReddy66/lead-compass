@@ -68,9 +68,9 @@ const PipelineView = ({ leads, onLeadClick, onLeadStatusChange }: PipelineViewPr
   return (
     <>
       {/* Mobile View - Single Stage with Navigation */}
-      <div className="md:hidden overflow-hidden">
+      <div className="md:hidden w-full max-w-full overflow-x-hidden">
         {/* Stage Tabs */}
-        <div className="flex items-center gap-1 overflow-x-auto pb-3 mb-3 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+        <div className="flex flex-wrap items-center gap-2 pb-2 mb-3 w-full max-w-full">
           {pipelineStages.map((stage, index) => {
             const config = LEAD_STATUS_CONFIG[stage];
             const count = getLeadsByStage(stage).length;
@@ -81,7 +81,7 @@ const PipelineView = ({ leads, onLeadClick, onLeadStatusChange }: PipelineViewPr
                 key={stage}
                 onClick={() => setMobileStageIndex(index)}
                 className={cn(
-                  'flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors',
+                  'px-3 py-1.5 rounded-full text-xs font-medium transition-colors',
                   isActive
                     ? 'bg-accent text-accent-foreground'
                     : 'bg-secondary text-muted-foreground'
@@ -94,11 +94,11 @@ const PipelineView = ({ leads, onLeadClick, onLeadStatusChange }: PipelineViewPr
         </div>
 
         {/* Current Stage Header */}
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <div className={cn('w-2.5 h-2.5 rounded-full', currentMobileConfig.bgColor.replace('/10', ''))} />
-            <h3 className="font-semibold text-sm text-foreground">{currentMobileConfig.label}</h3>
-            <span className="text-xs text-muted-foreground bg-secondary px-2 py-0.5 rounded-full">
+        <div className="flex items-center justify-between gap-2 mb-3 w-full max-w-full">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className={cn('w-2.5 h-2.5 rounded-full flex-shrink-0', currentMobileConfig.bgColor.replace('/10', ''))} />
+            <h3 className="font-semibold text-sm text-foreground truncate">{currentMobileConfig.label}</h3>
+            <span className="text-xs text-muted-foreground bg-secondary px-2 py-0.5 rounded-full flex-shrink-0">
               {currentMobileStageLeads.length}
             </span>
           </div>
@@ -165,8 +165,8 @@ const PipelineView = ({ leads, onLeadClick, onLeadStatusChange }: PipelineViewPr
 
         {/* Quick Move Buttons */}
         {currentMobileStageLeads.length > 0 && (
-          <div className="mt-3 flex gap-2 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-            <span className="text-xs text-muted-foreground py-1.5 flex-shrink-0">Move to:</span>
+          <div className="mt-3 flex flex-wrap items-center gap-2 w-full max-w-full">
+            <span className="text-xs text-muted-foreground py-1.5">Move to:</span>
             {pipelineStages
               .filter((s) => s !== currentMobileStage)
               .slice(0, 4)
@@ -175,7 +175,7 @@ const PipelineView = ({ leads, onLeadClick, onLeadStatusChange }: PipelineViewPr
                 return (
                   <button
                     key={stage}
-                    className="flex-shrink-0 px-2.5 py-1 bg-secondary rounded-full text-xs text-muted-foreground hover:bg-secondary/80 transition-colors"
+                    className="px-2.5 py-1 bg-secondary rounded-full text-xs text-muted-foreground hover:bg-secondary/80 transition-colors"
                     onClick={() => {
                       // This is a hint - user needs to tap a lead first
                     }}
