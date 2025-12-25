@@ -174,29 +174,6 @@ const PipelineView = ({ leads, onLeadClick, onLeadStatusChange }: PipelineViewPr
           </div>
         </div>
 
-        {/* Quick Move Buttons */}
-        {currentMobileStageLeads.length > 0 && (
-          <div className="mt-3 flex flex-wrap items-center gap-2 w-full max-w-full">
-            <span className="text-xs text-muted-foreground py-1.5">Move to:</span>
-            {pipelineStages
-              .filter((s) => s !== currentMobileStage)
-              .slice(0, 4)
-              .map((stage) => {
-                const config = LEAD_STATUS_CONFIG[stage];
-                return (
-                  <button
-                    key={stage}
-                    className="px-2.5 py-1 bg-secondary rounded-full text-xs text-muted-foreground hover:bg-secondary/80 transition-colors"
-                    onClick={() => {
-                      // This is a hint - user needs to tap a lead first
-                    }}
-                  >
-                    {mobileStageLabels[stage]}
-                  </button>
-                );
-              })}
-          </div>
-        )}
       </div>
 
       {/* Desktop View - Horizontal Columns */}
