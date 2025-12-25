@@ -60,7 +60,7 @@ const formatPropertyTypes = (types: PropertyType[]): string => {
 };
 
 const LeadsPage = () => {
-  const { leads: dbLeads, loading, updateLead } = useLeads();
+  const { leads: dbLeads, loading, updateLead, mergeLeads } = useLeads();
 
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -156,38 +156,31 @@ const LeadsPage = () => {
   return (
     <DashboardLayout>
       {/* HEADER */}
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="font-display text-2xl font-bold">All Leads</h1>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground text-sm">
             Manage and track all your leads in one place.
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={() => setDuplicateDialogOpen(true)}
-          >
-            <Copy className="w-4 h-4 mr-2" />
-            Find Duplicates
-          </Button>
-          <Button
-            onClick={() => {
-              setDialogMode('add');
-              setEditLeadData(null);
-              setLeadDialogOpen(true);
-            }}
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Add Lead
-          </Button>
-        </div>
+        <Button
+          onClick={() => {
+            setDialogMode('add');
+            setEditLeadData(null);
+            setLeadDialogOpen(true);
+          }}
+          className="w-full sm:w-auto"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Add Lead
+        </Button>
       </div>
 
       {/* FILTERS */}
       <div className="bg-card rounded-2xl p-4 shadow-card mb-6">
-        <div className="flex flex-col lg:flex-row gap-4">
-          <div className="relative flex-1">
+        <div className="flex flex-col gap-3">
+          {/* Search */}
+          <div className="relative w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               placeholder="Search by name, phone, email..."
@@ -197,65 +190,81 @@ const LeadsPage = () => {
             />
           </div>
 
-          <div className="relative min-w-0">
-            <select
-              value={statusFilter}
-              onChange={(e) =>
-                setStatusFilter(e.target.value as LeadStatus | 'all')
-              }
-              className="h-10 px-4 pr-10 rounded-lg border bg-background text-sm min-w-[160px] appearance-none"
-            >
-              <option value="all">All Statuses</option>
-              {Object.entries(LEAD_STATUS_CONFIG).map(([key, cfg]) => (
-                <option key={key} value={key}>
-                  {cfg.label}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none z-10" />
+          {/* Filter Row */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1 min-w-0">
+              <select
+                value={statusFilter}
+                onChange={(e) =>
+                  setStatusFilter(e.target.value as LeadStatus | 'all')
+                }
+                className="w-full h-10 px-4 pr-10 rounded-lg border bg-background text-sm appearance-none"
+              >
+                <option value="all">All Statuses</option>
+                {Object.entries(LEAD_STATUS_CONFIG).map(([key, cfg]) => (
+                  <option key={key} value={key}>
+                    {cfg.label}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none z-10" />
+            </div>
+
+            <div className="relative flex-1 min-w-0">
+              <select
+                value={propertyFilter}
+                onChange={(e) =>
+                  setPropertyFilter(e.target.value as PropertyType | 'all')
+                }
+                className="w-full h-10 px-4 pr-10 rounded-lg border bg-background text-sm appearance-none"
+              >
+                <option value="all">All Properties</option>
+                {Object.entries(PROPERTY_TYPE_LABELS).map(([k, v]) => (
+                  <option key={k} value={k}>
+                    {v}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none z-10" />
+            </div>
           </div>
 
-          <div className="relative min-w-0">
-            <select
-              value={propertyFilter}
-              onChange={(e) =>
-                setPropertyFilter(e.target.value as PropertyType | 'all')
-              }
-              className="h-10 px-4 pr-10 rounded-lg border bg-background text-sm min-w-[160px] appearance-none"
+          {/* Actions Row */}
+          <div className="flex items-center justify-between gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setDuplicateDialogOpen(true)}
+              className="text-xs"
             >
-              <option value="all">All Properties</option>
-              {Object.entries(PROPERTY_TYPE_LABELS).map(([k, v]) => (
-                <option key={k} value={k}>
-                  {v}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none z-10" />
-          </div>
+              <Copy className="w-3.5 h-3.5 mr-1.5" />
+              Find Duplicates
+            </Button>
 
-          <div className="flex bg-secondary rounded-lg p-1">
-            <button
-              onClick={() => setViewMode('grid')}
-              className={cn(
-                'px-3 py-1.5 rounded-md',
-                viewMode === 'grid'
-                  ? 'bg-card shadow-sm'
-                  : 'text-muted-foreground'
-              )}
-            >
-              <LayoutGrid className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setViewMode('list')}
-              className={cn(
-                'px-3 py-1.5 rounded-md',
-                viewMode === 'list'
-                  ? 'bg-card shadow-sm'
-                  : 'text-muted-foreground'
-              )}
-            >
-              <List className="w-4 h-4" />
-            </button>
+            <div className="flex bg-secondary rounded-lg p-1">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={cn(
+                  'px-3 py-1.5 rounded-md',
+                  viewMode === 'grid'
+                    ? 'bg-card shadow-sm'
+                    : 'text-muted-foreground'
+                )}
+              >
+                <LayoutGrid className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={cn(
+                  'px-3 py-1.5 rounded-md',
+                  viewMode === 'list'
+                    ? 'bg-card shadow-sm'
+                    : 'text-muted-foreground'
+                )}
+              >
+                <List className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -307,6 +316,7 @@ const LeadsPage = () => {
         onOpenChange={setDuplicateDialogOpen}
         leads={leads}
         onLeadClick={setSelectedLead}
+        onMerge={mergeLeads}
       />
     </DashboardLayout>
   );
