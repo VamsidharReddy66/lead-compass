@@ -7,6 +7,7 @@ interface LeadCardProps {
   lead: Lead;
   onClick?: () => void;
   isDragging?: boolean;
+  compact?: boolean;
 }
 
 const temperatureIcons = {
@@ -21,12 +22,47 @@ const temperatureColors = {
   cold: 'text-lead-cold',
 };
 
-const LeadCard = ({ lead, onClick, isDragging }: LeadCardProps) => {
+const LeadCard = ({ lead, onClick, isDragging, compact }: LeadCardProps) => {
   const TempIcon = temperatureIcons[lead.temperature];
   const statusConfig = LEAD_STATUS_CONFIG[lead.status];
 
   // Check if lead is overdue (has a follow-up date in the past)
   const isOverdue = lead.followUpDate && new Date(lead.followUpDate) < new Date();
+
+  if (compact) {
+    return (
+      <div
+        onClick={onClick}
+        className={cn(
+          'bg-card rounded-lg p-3 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer',
+          isDragging && 'opacity-50 rotate-1 scale-105',
+          isOverdue && 'border-l-2 border-l-destructive bg-destructive/5'
+        )}
+      >
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5">
+              <h3 className="font-medium text-sm text-foreground truncate">{lead.name}</h3>
+              <TempIcon className={cn('w-3.5 h-3.5 flex-shrink-0', temperatureColors[lead.temperature])} />
+            </div>
+            <p className="text-xs text-muted-foreground truncate">
+              {formatCurrency(lead.budgetMin)} - {formatCurrency(lead.budgetMax)}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            {lead.followUpDate && (
+              <div className={cn(
+                "text-[10px] px-1.5 py-0.5 rounded",
+                isOverdue ? "text-destructive bg-destructive/10" : "text-accent bg-accent/10"
+              )}>
+                {new Date(lead.followUpDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
