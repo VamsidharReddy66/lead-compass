@@ -62,21 +62,24 @@ const LeadDetailPanel = ({ lead, onClose, onStatusChange }: LeadDetailPanelProps
   const [outcomeNote, setOutcomeNote] = useState('');
   const [activeMeeting, setActiveMeeting] = useState<Meeting | null>(null);
 
-  const { meetings } = useMeetings();
+  const { meetings, updateMeetingStatus } = useMeetings();
   const { activities, createActivity } = useActivities(lead.id);
   const { updateLead } = useLeads();
 
-  const upcomingMeetings = useMemo(
-    () =>
-      meetings
-        .filter((m) => m.lead_id === lead.id && m.status === 'scheduled')
-        .sort(
-          (a, b) =>
-            new Date(a.scheduled_at).getTime() -
-            new Date(b.scheduled_at).getTime()
-        ),
-    [meetings, lead.id]
-  );
+  // Get only the NEXT upcoming meeting for this lead (one meeting at a time)
+  const nextMeeting = useMemo(() => {
+    const scheduled = meetings
+      .filter((m) => m.lead_id === lead.id && m.status === 'scheduled')
+      .sort(
+        (a, b) =>
+          new Date(a.scheduled_at).getTime() -
+          new Date(b.scheduled_at).getTime()
+      );
+    return scheduled.length > 0 ? scheduled[0] : null;
+  }, [meetings, lead.id]);
+
+  // Check if lead already has an active meeting (prevents creating duplicate)
+  const hasActiveMeeting = !!nextMeeting;
 
   const currentStageIndex = pipelineStages.indexOf(lead.status);
 
@@ -98,6 +101,9 @@ const LeadDetailPanel = ({ lead, onClose, onStatusChange }: LeadDetailPanelProps
         new_value: selectedOutcome,
         meeting_id: activeMeeting.id,
       });
+
+      // Mark meeting as completed so user can schedule a new one
+      await updateMeetingStatus(activeMeeting.id, 'completed');
     } catch (err) {
       console.error('Error saving outcome activity:', err);
     } finally {
@@ -120,6 +126,9 @@ const LeadDetailPanel = ({ lead, onClose, onStatusChange }: LeadDetailPanelProps
           new_value: selectedOutcome,
           meeting_id: activeMeeting.id,
         });
+
+        // Mark meeting as completed so user can schedule a new one
+        await updateMeetingStatus(activeMeeting.id, 'completed');
       } catch (err) {
         console.error('Error saving outcome before scheduling:', err);
       }
@@ -202,6 +211,8 @@ const LeadDetailPanel = ({ lead, onClose, onStatusChange }: LeadDetailPanelProps
             size="sm"
             className="flex-1"
             onClick={() => setShowScheduleDialog(true)}
+            disabled={hasActiveMeeting}
+            title={hasActiveMeeting ? 'Complete or reschedule existing meeting first' : 'Schedule a meeting'}
           >
             <CalendarPlus className="w-4 h-4 mr-2" /> Meeting
           </Button>
@@ -307,47 +318,43 @@ const LeadDetailPanel = ({ lead, onClose, onStatusChange }: LeadDetailPanelProps
           </div>
         )}
 
-        {/* UPCOMING MEETINGS */}
-        {upcomingMeetings.length > 0 && (
+        {/* NEXT MEETING (Only one at a time) */}
+        {nextMeeting && (
           <div className="bg-accent/10 rounded-xl p-4 space-y-3">
-            <h3 className="font-semibold text-sm">
-              Upcoming Meetings ({upcomingMeetings.length})
-            </h3>
+            <h3 className="font-semibold text-sm">Next Meeting</h3>
 
-            {upcomingMeetings.map((meeting) => (
-              <div key={meeting.id} className="bg-card p-3 rounded-lg space-y-2">
-                <div className="flex justify-between text-sm">
-                  <div>{meeting.title}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {formatDate(meeting.scheduled_at)} · {formatTime(meeting.scheduled_at)}
-                  </div>
+            <div className="bg-card p-3 rounded-lg space-y-2">
+              <div className="flex justify-between text-sm">
+                <div>{nextMeeting.title}</div>
+                <div className="text-xs text-muted-foreground">
+                  {formatDate(nextMeeting.scheduled_at)} · {formatTime(nextMeeting.scheduled_at)}
                 </div>
-
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="w-full text-xs"
-                  onClick={() => {
-                    setActiveMeeting(meeting);
-                    setShowOutcomeDialog(true);
-                  }}
-                >
-                  Add outcome
-                </Button>
-
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="w-full text-xs"
-                  onClick={() => {
-                    setActiveMeeting(meeting);
-                    setShowScheduleDialog(true);
-                  }}
-                >
-                  Reschedule
-                </Button>
               </div>
-            ))}
+
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full text-xs"
+                onClick={() => {
+                  setActiveMeeting(nextMeeting);
+                  setShowOutcomeDialog(true);
+                }}
+              >
+                Add outcome
+              </Button>
+
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full text-xs"
+                onClick={() => {
+                  setActiveMeeting(nextMeeting);
+                  setShowScheduleDialog(true);
+                }}
+              >
+                Reschedule
+              </Button>
+            </div>
           </div>
         )}
 

@@ -61,11 +61,25 @@ export const useMeetings = () => {
     if (!user) return null;
 
     try {
+      // Check if lead already has an active scheduled meeting
+      const existingMeeting = meetings.find(
+        (m) => m.lead_id === input.lead_id && m.status === 'scheduled'
+      );
+
+      if (existingMeeting) {
+        toast({
+          title: 'Meeting exists',
+          description: 'This lead already has a scheduled meeting. Please complete or reschedule the existing meeting first.',
+          variant: 'destructive',
+        });
+        return null;
+      }
+
       const { data, error } = await supabase
         .from('meetings')
         .insert({
           ...input,
-          agent_id: user.id, // ✅ ONLY VALID EXTRA FIELD
+          agent_id: user.id,
         })
         .select()
         .single();
@@ -87,6 +101,61 @@ export const useMeetings = () => {
         variant: 'destructive',
       });
       return null;
+    }
+  };
+
+  const updateMeetingStatus = async (meetingId: string, status: Meeting['status']) => {
+    if (!user) return false;
+
+    try {
+      const { error } = await supabase
+        .from('meetings')
+        .update({ status })
+        .eq('id', meetingId);
+
+      if (error) throw error;
+
+      setMeetings((prev) =>
+        prev.map((m) => (m.id === meetingId ? { ...m, status } : m))
+      );
+      return true;
+    } catch (error) {
+      console.error('Error updating meeting status:', error);
+      return false;
+    }
+  };
+
+  const rescheduleMeeting = async (meetingId: string, newScheduledAt: string) => {
+    if (!user) return false;
+
+    try {
+      const { error } = await supabase
+        .from('meetings')
+        .update({ scheduled_at: newScheduledAt, status: 'scheduled' })
+        .eq('id', meetingId);
+
+      if (error) throw error;
+
+      setMeetings((prev) =>
+        prev.map((m) =>
+          m.id === meetingId
+            ? { ...m, scheduled_at: newScheduledAt, status: 'scheduled' as const }
+            : m
+        )
+      );
+      toast({
+        title: 'Meeting rescheduled',
+        description: 'Meeting has been rescheduled successfully',
+      });
+      return true;
+    } catch (error) {
+      console.error('Error rescheduling meeting:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to reschedule meeting',
+        variant: 'destructive',
+      });
+      return false;
     }
   };
 
@@ -127,6 +196,8 @@ export const useMeetings = () => {
     meetings,
     loading,
     createMeeting,
+    updateMeetingStatus,
+    rescheduleMeeting,
     getMeetingsForDate,
     refetch: fetchMeetings,
   };
