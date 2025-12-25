@@ -28,6 +28,7 @@ import { useMeetings, Meeting } from '@/hooks/useMeetings';
 import { useActivities } from '@/hooks/useActivities';
 import { useLeads } from '@/hooks/useLeads';
 import { Textarea } from '@/components/ui/textarea';
+import ActivityHistory from '@/components/leads/ActivityHistory';
 
 const pipelineStages: LeadStatus[] = [
   'new',
@@ -400,43 +401,7 @@ const LeadDetailPanel = ({ lead, onClose, onStatusChange }: LeadDetailPanelProps
         )}
 
         {/* ACTIVITY HISTORY */}
-        <div className="bg-secondary/50 rounded-xl p-4 space-y-3">
-          <h3 className="font-semibold text-sm flex items-center gap-2">
-            <History className="w-4 h-4" />
-            Activity History
-          </h3>
-
-          {activities.length === 0 ? (
-            <p className="text-xs text-muted-foreground">No activities yet</p>
-          ) : (
-            <div className="space-y-3">
-              {activities.map((a) => {
-                const activityDate = new Date(a.created_at);
-                const timeAgo = getTimeAgo(activityDate);
-                const formattedDate = activityDate.toLocaleString('en-IN', {
-                  day: 'numeric',
-                  month: 'short',
-                  year: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit',
-                  hour12: true,
-                });
-
-                return (
-                  <div key={a.id} className="border-l-2 border-border pl-3 py-1">
-                    <div className="flex items-start justify-between gap-2">
-                      <p className="text-sm text-foreground">{a.description}</p>
-                    </div>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-[10px] text-muted-foreground">{formattedDate}</span>
-                      <span className="text-[10px] text-muted-foreground/60">• {timeAgo}</span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
+        <ActivityHistory activities={activities} />
 
         {/* ACTIONS */}
         <div className="flex gap-2 pt-4 border-t">
