@@ -166,14 +166,17 @@ export const useMeetings = () => {
     }
   };
 
-  const getMeetingsForDate = (date: Date) => {
+  const getMeetingsForDate = (date: Date, statusFilter: Meeting['status'] | 'all' = 'scheduled') => {
     return meetings.filter((m) => {
       const d = new Date(m.scheduled_at);
-      return (
+      const dateMatch =
         d.getFullYear() === date.getFullYear() &&
         d.getMonth() === date.getMonth() &&
-        d.getDate() === date.getDate()
-      );
+        d.getDate() === date.getDate();
+      
+      if (!dateMatch) return false;
+      if (statusFilter === 'all') return true;
+      return m.status === statusFilter;
     });
   };
 

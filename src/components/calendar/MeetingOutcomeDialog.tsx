@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useActivities } from '@/hooks/useActivities';
-import { Meeting } from '@/hooks/useMeetings';
+import { Meeting, useMeetings } from '@/hooks/useMeetings';
 
 interface Props {
   open: boolean;
@@ -16,6 +16,7 @@ const MeetingOutcomeDialog = ({ open, onOpenChange, meeting, onNextSchedule }: P
   const [outcomeNote, setOutcomeNote] = useState('');
 
   const { createActivity } = useActivities(meeting?.lead_id);
+  const { updateMeetingStatus } = useMeetings();
 
   useEffect(() => {
     if (!open) {
@@ -24,17 +25,44 @@ const MeetingOutcomeDialog = ({ open, onOpenChange, meeting, onNextSchedule }: P
     }
   }, [open]);
 
+  const formatDateTime = (iso: string) => {
+    const d = new Date(iso);
+    return d.toLocaleString('en-IN', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+  };
+
+  const formatNow = () => {
+    return new Date().toLocaleString('en-IN', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+  };
+
   const saveOutcome = async () => {
     if (!selectedOutcome || !meeting) return;
     try {
+      const now = formatNow();
       await createActivity({
         lead_id: meeting.lead_id,
         activity_type: 'meeting_outcome',
-        description: `${selectedOutcome}${outcomeNote ? ': ' + outcomeNote : ''}`,
+        description: `Outcome: ${selectedOutcome}${outcomeNote ? ' - ' + outcomeNote : ''} | Meeting: ${formatDateTime(meeting.scheduled_at)} | Updated: ${now}`,
         previous_value: null,
         new_value: selectedOutcome,
         meeting_id: meeting.id,
       });
+
+      // Mark meeting as completed so it disappears from calendar
+      await updateMeetingStatus(meeting.id, 'completed');
     } catch (err) {
       console.error('Error saving meeting outcome:', err);
     }
