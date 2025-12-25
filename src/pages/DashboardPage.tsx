@@ -109,9 +109,7 @@ const DashboardPage = () => {
     ];
   }, [stats.funnel]);
 
-  const isLoading = leadsLoading || meetingsLoading;
-
-  if (isLoading) {
+  if (leadsLoading || meetingsLoading) {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-[60vh]">
