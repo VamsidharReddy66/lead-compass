@@ -1,6 +1,12 @@
-import { useState, useMemo } from "react";
-import { Lead, LeadStatus, LEAD_STATUS_CONFIG, PROPERTY_TYPE_LABELS, LEAD_SOURCE_LABELS } from "@/types/lead";
-import { formatCurrency } from "@/data/mockData";
+import { useState, useMemo } from 'react';
+import {
+  Lead,
+  LeadStatus,
+  LEAD_STATUS_CONFIG,
+  PROPERTY_TYPE_LABELS,
+  LEAD_SOURCE_LABELS,
+} from '@/types/lead';
+import { formatCurrency } from '@/data/mockData';
 import {
   X,
   Phone,
@@ -13,24 +19,24 @@ import {
   ArrowRight,
   Edit2,
   Trash2,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import ScheduleMeetingDialog from "@/components/calendar/ScheduleMeetingDialog";
-import AddLeadDialog from "@/components/leads/AddLeadDialog";
-import { useMeetings, Meeting } from "@/hooks/useMeetings";
-import { useActivities } from "@/hooks/useActivities";
-import { useLeads } from "@/hooks/useLeads";
-import { Textarea } from "@/components/ui/textarea";
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+import ScheduleMeetingDialog from '@/components/calendar/ScheduleMeetingDialog';
+import AddLeadDialog from '@/components/leads/AddLeadDialog';
+import { useMeetings, Meeting } from '@/hooks/useMeetings';
+import { useActivities } from '@/hooks/useActivities';
+import { useLeads } from '@/hooks/useLeads';
+import { Textarea } from '@/components/ui/textarea';
 
 const pipelineStages: LeadStatus[] = [
-  "new",
-  "contacted",
-  "site-visit-scheduled",
-  "site-visit-completed",
-  "negotiation",
-  "closed",
-  "lost",
+  'new',
+  'contacted',
+  'site-visit-scheduled',
+  'site-visit-completed',
+  'negotiation',
+  'closed',
+  'lost',
 ];
 
 interface LeadDetailPanelProps {
@@ -40,9 +46,9 @@ interface LeadDetailPanelProps {
 }
 
 const temperatureColors: Record<string, string> = {
-  hot: "bg-lead-hot text-white",
-  warm: "bg-lead-warm text-white",
-  cold: "bg-lead-cold text-white",
+  hot: 'bg-lead-hot text-white',
+  warm: 'bg-lead-warm text-white',
+  cold: 'bg-lead-cold text-white',
 };
 
 const LeadDetailPanel = ({ lead, onClose, onStatusChange }: LeadDetailPanelProps) => {
@@ -52,8 +58,8 @@ const LeadDetailPanel = ({ lead, onClose, onStatusChange }: LeadDetailPanelProps
   const [showOutcomeDialog, setShowOutcomeDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
 
-  const [selectedOutcome, setSelectedOutcome] = useState("");
-  const [outcomeNote, setOutcomeNote] = useState("");
+  const [selectedOutcome, setSelectedOutcome] = useState('');
+  const [outcomeNote, setOutcomeNote] = useState('');
   const [activeMeeting, setActiveMeeting] = useState<Meeting | null>(null);
 
   const { meetings } = useMeetings();
@@ -63,9 +69,13 @@ const LeadDetailPanel = ({ lead, onClose, onStatusChange }: LeadDetailPanelProps
   const upcomingMeetings = useMemo(
     () =>
       meetings
-        .filter((m) => m.lead_id === lead.id && m.status === "scheduled")
-        .sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime()),
-    [meetings, lead.id],
+        .filter((m) => m.lead_id === lead.id && m.status === 'scheduled')
+        .sort(
+          (a, b) =>
+            new Date(a.scheduled_at).getTime() -
+            new Date(b.scheduled_at).getTime()
+        ),
+    [meetings, lead.id]
   );
 
   const currentStageIndex = pipelineStages.indexOf(lead.status);
@@ -82,17 +92,17 @@ const LeadDetailPanel = ({ lead, onClose, onStatusChange }: LeadDetailPanelProps
     try {
       await createActivity({
         lead_id: lead.id,
-        activity_type: "meeting_outcome",
-        description: `${selectedOutcome}${outcomeNote ? ": " + outcomeNote : ""}`,
+        activity_type: 'meeting_outcome',
+        description: `${selectedOutcome}${outcomeNote ? ': ' + outcomeNote : ''}`,
         previous_value: null,
         new_value: selectedOutcome,
         meeting_id: activeMeeting.id,
       });
     } catch (err) {
-      console.error("Error saving outcome activity:", err);
+      console.error('Error saving outcome activity:', err);
     } finally {
-      setSelectedOutcome("");
-      setOutcomeNote("");
+      setSelectedOutcome('');
+      setOutcomeNote('');
       setActiveMeeting(null);
       setShowOutcomeDialog(false);
     }
@@ -104,37 +114,37 @@ const LeadDetailPanel = ({ lead, onClose, onStatusChange }: LeadDetailPanelProps
       try {
         await createActivity({
           lead_id: lead.id,
-          activity_type: "meeting_outcome",
-          description: `${selectedOutcome}${outcomeNote ? ": " + outcomeNote : ""}`,
+          activity_type: 'meeting_outcome',
+          description: `${selectedOutcome}${outcomeNote ? ': ' + outcomeNote : ''}`,
           previous_value: null,
           new_value: selectedOutcome,
           meeting_id: activeMeeting.id,
         });
       } catch (err) {
-        console.error("Error saving outcome before scheduling:", err);
+        console.error('Error saving outcome before scheduling:', err);
       }
     }
 
     // Close outcome dialog and open schedule dialog after a short delay
     setShowOutcomeDialog(false);
     setTimeout(() => setShowScheduleDialog(true), 400);
-    setSelectedOutcome("");
-    setOutcomeNote("");
+    setSelectedOutcome('');
+    setOutcomeNote('');
     setActiveMeeting(null);
   };
 
   const formatTime = (iso: string) =>
-    new Date(iso).toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
+    new Date(iso).toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
       hour12: true,
     });
 
   const formatDate = (iso: string) =>
-    new Date(iso).toLocaleDateString("en-IN", {
-      weekday: "short",
-      month: "short",
-      day: "numeric",
+    new Date(iso).toLocaleDateString('en-IN', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
     });
 
   // Helper to format property types as "Plot | Villa"
@@ -152,10 +162,21 @@ const LeadDetailPanel = ({ lead, onClose, onStatusChange }: LeadDetailPanelProps
         <div>
           <h2 className="font-semibold text-lg">{lead.name}</h2>
           <div className="flex gap-2 mt-1">
-            <span className={cn("text-xs px-2 py-0.5 rounded-full", statusConfig.bgColor, statusConfig.color)}>
+            <span
+              className={cn(
+                'text-xs px-2 py-0.5 rounded-full',
+                statusConfig.bgColor,
+                statusConfig.color
+              )}
+            >
               {statusConfig.label}
             </span>
-            <span className={cn("text-xs px-2 py-0.5 rounded-full capitalize", temperatureColors[lead.temperature])}>
+            <span
+              className={cn(
+                'text-xs px-2 py-0.5 rounded-full capitalize',
+                temperatureColors[lead.temperature]
+              )}
+            >
               {lead.temperature}
             </span>
           </div>
@@ -167,6 +188,7 @@ const LeadDetailPanel = ({ lead, onClose, onStatusChange }: LeadDetailPanelProps
 
       {/* CONTENT */}
       <div className="p-6 space-y-6 overflow-y-auto h-[calc(100vh-80px)]">
+
         {/* QUICK ACTIONS */}
         <div className="flex gap-2">
           <Button variant="outline" size="sm" className="flex-1">
@@ -175,7 +197,12 @@ const LeadDetailPanel = ({ lead, onClose, onStatusChange }: LeadDetailPanelProps
           <Button variant="outline" size="sm" className="flex-1">
             <MessageSquare className="w-4 h-4 mr-2" /> WhatsApp
           </Button>
-          <Button variant="outline" size="sm" className="flex-1" onClick={() => setShowScheduleDialog(true)}>
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1"
+            onClick={() => setShowScheduleDialog(true)}
+          >
             <CalendarPlus className="w-4 h-4 mr-2" /> Meeting
           </Button>
         </div>
@@ -192,7 +219,7 @@ const LeadDetailPanel = ({ lead, onClose, onStatusChange }: LeadDetailPanelProps
               const cfg = LEAD_STATUS_CONFIG[stage];
               const isActive = stage === lead.status;
               const isPast = currentStageIndex > index;
-              const isLost = lead.status === "lost";
+              const isLost = lead.status === 'lost';
 
               if (isLost) {
                 return (
@@ -200,14 +227,17 @@ const LeadDetailPanel = ({ lead, onClose, onStatusChange }: LeadDetailPanelProps
                     key={stage}
                     disabled={!onStatusChange || isActive}
                     onClick={() => handleStatusClick(stage)}
-                    className={cn("px-2 py-1 rounded text-xs font-medium transition-all", "bg-red-600 text-white")}
+                    className={cn(
+                      'px-2 py-1 rounded text-xs font-medium transition-all',
+                      'bg-red-600 text-white'
+                    )}
                   >
-                    {cfg.label.split(" ")[0]}
+                    {cfg.label.split(' ')[0]}
                   </button>
                 );
               }
 
-              const activeClass = isActive ? "bg-accent text-accent-foreground" : "";
+              const activeClass = isActive ? 'bg-accent text-accent-foreground' : '';
 
               return (
                 <button
@@ -215,14 +245,16 @@ const LeadDetailPanel = ({ lead, onClose, onStatusChange }: LeadDetailPanelProps
                   disabled={!onStatusChange || isActive}
                   onClick={() => handleStatusClick(stage)}
                   className={cn(
-                    "px-2 py-1 rounded text-xs font-medium transition-all",
+                    'px-2 py-1 rounded text-xs font-medium transition-all',
                     activeClass,
-                    isPast && !isActive && "bg-status-closed/20 text-status-closed",
-                    !isActive && !isPast && "bg-muted text-muted-foreground",
-                    !isActive && onStatusChange && "hover:ring-2 hover:ring-accent/40",
+                    isPast && !isActive && 'bg-status-closed/20 text-status-closed',
+                    !isActive && !isPast && 'bg-muted text-muted-foreground',
+                    !isActive &&
+                      onStatusChange &&
+                      'hover:ring-2 hover:ring-accent/40'
                   )}
                 >
-                  {cfg.label.split(" ")[0]}
+                  {cfg.label.split(' ')[0]}
                 </button>
               );
             })}
@@ -247,7 +279,11 @@ const LeadDetailPanel = ({ lead, onClose, onStatusChange }: LeadDetailPanelProps
         <div className="bg-secondary/50 rounded-xl p-4 grid grid-cols-2 gap-4 text-sm">
           <div>
             <div className="text-muted-foreground text-xs">Property Type</div>
-            {PROPERTY_TYPE_LABELS[lead.propertyType]}
+            {lead.propertyTypes && lead.propertyTypes.length > 0
+              ? lead.propertyTypes
+                  .map((pt) => PROPERTY_TYPE_LABELS[pt] || pt)
+                  .join(' | ')
+              : PROPERTY_TYPE_LABELS[lead.propertyType]}
           </div>
           <div>
             <div className="text-muted-foreground text-xs">Budget</div>
@@ -267,14 +303,18 @@ const LeadDetailPanel = ({ lead, onClose, onStatusChange }: LeadDetailPanelProps
         {lead.notes && (
           <div className="bg-secondary/50 rounded-xl p-4">
             <h3 className="font-semibold text-sm mb-1">Notes</h3>
-            <p className="text-sm text-muted-foreground whitespace-pre-line">{lead.notes}</p>
+            <p className="text-sm text-muted-foreground whitespace-pre-line">
+              {lead.notes}
+            </p>
           </div>
         )}
 
         {/* UPCOMING MEETINGS */}
         {upcomingMeetings.length > 0 && (
           <div className="bg-accent/10 rounded-xl p-4 space-y-3">
-            <h3 className="font-semibold text-sm">Upcoming Meetings ({upcomingMeetings.length})</h3>
+            <h3 className="font-semibold text-sm">
+              Upcoming Meetings ({upcomingMeetings.length})
+            </h3>
 
             {upcomingMeetings.map((meeting) => (
               <div key={meeting.id} className="bg-card p-3 rounded-lg space-y-2">
@@ -329,7 +369,11 @@ const LeadDetailPanel = ({ lead, onClose, onStatusChange }: LeadDetailPanelProps
 
         {/* ACTIONS */}
         <div className="flex gap-2 pt-4 border-t">
-          <Button variant="outline" className="flex-1" onClick={() => setShowEditDialog(true)}>
+          <Button
+            variant="outline"
+            className="flex-1"
+            onClick={() => setShowEditDialog(true)}
+          >
             <Edit2 className="w-4 h-4 mr-2" /> Edit Lead
           </Button>
           <Button variant="outline" className="text-destructive">
@@ -347,13 +391,13 @@ const LeadDetailPanel = ({ lead, onClose, onStatusChange }: LeadDetailPanelProps
           name: lead.name,
           phone: lead.phone,
           email: lead.email,
-          property_type: lead.propertyType,
+          property_types: lead.propertyTypes || [lead.propertyType],
           budget_min: lead.budgetMin,
           budget_max: lead.budgetMax,
-          location_preference: lead.locationPreference || "",
+          location_preference: lead.locationPreference || '',
           source: lead.source,
           temperature: lead.temperature,
-          notes: lead.notes || "",
+          notes: lead.notes || '',
         }}
         onUpdate={async (data) => {
           await updateLead(lead.id, data);
@@ -418,3 +462,4 @@ const LeadDetailPanel = ({ lead, onClose, onStatusChange }: LeadDetailPanelProps
 };
 
 export default LeadDetailPanel;
+
