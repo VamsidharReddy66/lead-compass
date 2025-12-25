@@ -42,44 +42,32 @@ const ScheduleMeetingDialog = ({
     leadId && leadName ? { id: leadId, name: leadName } : null
   );
   
-  const getCurrentDateTime = () => {
-    const now = new Date();
-    const dateStr = now.toISOString().split('T')[0];
-    const hours = now.getHours().toString().padStart(2, '0');
-    const minutes = now.getMinutes().toString().padStart(2, '0');
-    return { date: dateStr, time: `${hours}:${minutes}` };
-  };
-
-  const getDefaultDateTime = () => {
+  const getDefaultDate = () => {
     if (defaultDate) {
-      return { date: defaultDate.toISOString().split('T')[0], time: getCurrentDateTime().time };
+      return defaultDate.toISOString().split('T')[0];
     }
-    return getCurrentDateTime();
+    return new Date().toISOString().split('T')[0];
   };
   
-  const [formData, setFormData] = useState(() => {
-    const { date, time } = getDefaultDateTime();
-    return {
-      title: leadName ? `Follow-up with ${leadName}` : '',
-      description: '',
-      meeting_type: 'follow-up' as const,
-      date,
-      time,
-      duration_minutes: 30,
-      location: '',
-    };
-  });
+  const [formData, setFormData] = useState(() => ({
+    title: leadName ? `Follow-up with ${leadName}` : '',
+    description: '',
+    meeting_type: 'follow-up' as const,
+    date: getDefaultDate(),
+    time: '10:00',
+    duration_minutes: 30,
+    location: '',
+  }));
 
-  // Reset form when dialog opens with new lead - set real-time date/time
+  // Reset form when dialog opens with new lead
   useEffect(() => {
     if (open) {
-      const { date, time } = getDefaultDateTime();
       setSelectedLead(leadId && leadName ? { id: leadId, name: leadName } : null);
       setFormData(prev => ({
         ...prev,
         title: leadName ? `Follow-up with ${leadName}` : '',
-        date,
-        time,
+        date: getDefaultDate(),
+        time: '10:00',
       }));
       setSearchQuery('');
       setSearchResults([]);
@@ -176,13 +164,12 @@ const ScheduleMeetingDialog = ({
       });
       onOpenChange(false);
       setSelectedLead(null);
-      const { date, time } = getCurrentDateTime();
       setFormData({
         title: '',
         description: '',
         meeting_type: 'follow-up',
-        date,
-        time,
+        date: getDefaultDate(),
+        time: '10:00',
         duration_minutes: 30,
         location: '',
       });
@@ -191,59 +178,52 @@ const ScheduleMeetingDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>{reschedulesMeetingId ? 'Reschedule Meeting' : 'Schedule Meeting'}</DialogTitle>
+      <DialogContent className="sm:max-w-sm p-4">
+        <DialogHeader className="pb-2">
+          <DialogTitle className="text-base">{reschedulesMeetingId ? 'Reschedule Meeting' : 'Schedule Meeting'}</DialogTitle>
         </DialogHeader>
         
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-3">
           {/* Lead Search */}
           {!leadId && (
-            <div className="space-y-2">
-              <Label>Select Lead *</Label>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Select Lead *</Label>
               {selectedLead ? (
-                <div className="flex items-center justify-between p-3 bg-secondary rounded-lg">
+                <div className="flex items-center justify-between p-2 bg-secondary rounded-md">
                   <div className="flex items-center gap-2">
-                    <User className="w-4 h-4 text-muted-foreground" />
-                    <span className="font-medium">{selectedLead.name}</span>
-                    <span className="text-xs text-muted-foreground font-mono">#{selectedLead.id.slice(0, 8)}</span>
+                    <User className="w-3.5 h-3.5 text-muted-foreground" />
+                    <span className="text-sm font-medium">{selectedLead.name}</span>
                   </div>
-                  <Button type="button" variant="ghost" size="sm" onClick={() => setSelectedLead(null)}>
+                  <Button type="button" variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setSelectedLead(null)}>
                     Change
                   </Button>
                 </div>
               ) : (
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
                   <Input
-                    placeholder="Search by ID, name, or phone..."
+                    placeholder="Search by name or phone..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10"
+                    className="pl-8 h-8 text-sm"
                   />
                   {showSearchResults && searchResults.length > 0 && (
-                    <div className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                    <div className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-md shadow-lg max-h-36 overflow-y-auto">
                       {searchResults.map((lead) => (
                         <button
                           key={lead.id}
                           type="button"
                           onClick={() => handleSelectLead(lead)}
-                          className={cn(
-                            'w-full px-4 py-2 text-left hover:bg-secondary transition-colors',
-                            'flex flex-col gap-0.5'
-                          )}
+                          className="w-full px-3 py-1.5 text-left hover:bg-secondary transition-colors"
                         >
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium">{lead.name}</span>
-                            <span className="text-xs text-muted-foreground font-mono">#{lead.id.slice(0, 8)}</span>
-                          </div>
-                          <span className="text-xs text-muted-foreground">{lead.phone}</span>
+                          <span className="text-sm font-medium">{lead.name}</span>
+                          <span className="text-xs text-muted-foreground ml-2">{lead.phone}</span>
                         </button>
                       ))}
                     </div>
                   )}
                   {showSearchResults && searchResults.length === 0 && searchQuery.length >= 2 && (
-                    <div className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-lg shadow-lg p-4 text-center text-sm text-muted-foreground">
+                    <div className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-md shadow-lg p-3 text-center text-xs text-muted-foreground">
                       No leads found
                     </div>
                   )}
@@ -252,24 +232,25 @@ const ScheduleMeetingDialog = ({
             </div>
           )}
 
-          <div className="space-y-2">
-            <Label htmlFor="title">Title</Label>
+          <div className="space-y-1.5">
+            <Label htmlFor="title" className="text-xs">Title</Label>
             <Input
               id="title"
               value={formData.title}
               onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
               placeholder="Meeting title"
+              className="h-8 text-sm"
               required
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="meeting_type">Type</Label>
+          <div className="space-y-1.5">
+            <Label htmlFor="meeting_type" className="text-xs">Type</Label>
             <Select
               value={formData.meeting_type}
               onValueChange={(value: any) => setFormData(prev => ({ ...prev, meeting_type: value }))}
             >
-              <SelectTrigger>
+              <SelectTrigger className="h-8 text-sm">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -281,76 +262,80 @@ const ScheduleMeetingDialog = ({
             </Select>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="date">Date</Label>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="date" className="text-xs">Date</Label>
               <Input
                 id="date"
                 type="date"
                 value={formData.date}
                 onChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))}
+                className="h-8 text-sm"
                 required
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="time">Time</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="time" className="text-xs">Time</Label>
               <Input
                 id="time"
                 type="time"
                 value={formData.time}
                 onChange={(e) => setFormData(prev => ({ ...prev, time: e.target.value }))}
+                className="h-8 text-sm"
                 required
               />
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="duration">Duration (minutes)</Label>
-            <Select
-              value={formData.duration_minutes.toString()}
-              onValueChange={(value) => setFormData(prev => ({ ...prev, duration_minutes: parseInt(value) }))}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="15">15 minutes</SelectItem>
-                <SelectItem value="30">30 minutes</SelectItem>
-                <SelectItem value="45">45 minutes</SelectItem>
-                <SelectItem value="60">1 hour</SelectItem>
-                <SelectItem value="90">1.5 hours</SelectItem>
-                <SelectItem value="120">2 hours</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="duration" className="text-xs">Duration</Label>
+              <Select
+                value={formData.duration_minutes.toString()}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, duration_minutes: parseInt(value) }))}
+              >
+                <SelectTrigger className="h-8 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="15">15 min</SelectItem>
+                  <SelectItem value="30">30 min</SelectItem>
+                  <SelectItem value="45">45 min</SelectItem>
+                  <SelectItem value="60">1 hour</SelectItem>
+                  <SelectItem value="90">1.5 hrs</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="location" className="text-xs">Location</Label>
+              <Input
+                id="location"
+                value={formData.location}
+                onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
+                placeholder="Optional"
+                className="h-8 text-sm"
+              />
+            </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="location">Location (optional)</Label>
-            <Input
-              id="location"
-              value={formData.location}
-              onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
-              placeholder="Meeting location"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="description">Notes (optional)</Label>
+          <div className="space-y-1.5">
+            <Label htmlFor="description" className="text-xs">Notes</Label>
             <Textarea
               id="description"
               value={formData.description}
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-              placeholder="Additional notes..."
-              rows={3}
+              placeholder="Optional notes..."
+              rows={2}
+              className="text-sm resize-none"
             />
           </div>
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          <DialogFooter className="pt-2 gap-2">
+            <Button type="button" variant="outline" size="sm" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit" disabled={loading || !selectedLead}>
-              {loading ? (reschedulesMeetingId ? 'Rescheduling...' : 'Scheduling...') : (reschedulesMeetingId ? 'Reschedule' : 'Schedule')}
+            <Button type="submit" size="sm" disabled={loading || !selectedLead}>
+              {loading ? 'Saving...' : (reschedulesMeetingId ? 'Reschedule' : 'Schedule')}
             </Button>
           </DialogFooter>
         </form>
