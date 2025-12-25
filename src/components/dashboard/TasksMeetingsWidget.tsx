@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Calendar } from '@/components/ui/calendar';
 import {
   Select,
   SelectContent,
@@ -13,6 +14,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import { 
   CheckSquare, 
   Calendar as CalendarIcon, 
@@ -62,8 +68,8 @@ const TasksMeetingsWidget = () => {
   const [selectedViews, setSelectedViews] = useState<ViewType[]>(['tasks', 'meetings']);
   const [filter, setFilter] = useState<FilterType>('all');
   const [meetingTypeFilter, setMeetingTypeFilter] = useState<MeetingType>('all');
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [dueDateFilter, setDueDateFilter] = useState<Date>(new Date());
   // Dialog states
   const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null);
   const [showMeetingDetail, setShowMeetingDetail] = useState(false);
@@ -169,38 +175,6 @@ const TasksMeetingsWidget = () => {
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 mb-8">
       {/* Tasks/Meetings List */}
       <div className="lg:col-span-2 bg-card rounded-2xl p-4 md:p-6 shadow-card">
-        {/* Header with view toggles */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground hidden sm:inline">Show</span>
-            <Button
-              variant={selectedViews.includes('tasks') ? 'default' : 'outline'}
-              size="sm"
-              className="h-8 gap-1.5 text-xs sm:text-sm"
-              onClick={() => toggleView('tasks')}
-            >
-              <CheckSquare className="w-4 h-4" />
-              <span className="hidden xs:inline">Tasks</span>
-            </Button>
-            <Button
-              variant={selectedViews.includes('meetings') ? 'default' : 'outline'}
-              size="sm"
-              className="h-8 gap-1.5 text-xs sm:text-sm"
-              onClick={() => toggleView('meetings')}
-            >
-              <CalendarIcon className="w-4 h-4" />
-              <span className="hidden xs:inline">Meetings</span>
-            </Button>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs sm:text-sm">
-              <CheckSquare className="w-4 h-4" />
-              <span className="hidden sm:inline">Add task</span>
-              <ChevronDown className="w-3 h-3" />
-            </Button>
-          </div>
-        </div>
-
         {/* Filter tabs with meeting type filter */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
           <div className="flex items-center gap-1 sm:gap-2 overflow-x-auto pb-1">
@@ -239,20 +213,27 @@ const TasksMeetingsWidget = () => {
           </Select>
         </div>
 
-        {/* Sub-header */}
-        <div className="flex items-center justify-between mb-4 pb-4 border-b">
-          <div className="flex items-center gap-3">
-            <Checkbox id="select-all" />
-            <label htmlFor="select-all" className="text-sm text-muted-foreground">
-              Select all
-            </label>
-          </div>
+        {/* Sub-header with Date Picker */}
+        <div className="flex items-center justify-end mb-4 pb-4 border-b">
           <div className="flex items-center gap-2 text-sm">
             <span className="text-muted-foreground">Due date:</span>
-            <Button variant="link" size="sm" className="h-auto p-0 text-primary">
-              Today ({format(new Date(), 'd MMM')})
-              <ChevronDown className="w-3 h-3 ml-1" />
-            </Button>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="link" size="sm" className="h-auto p-0 text-primary font-medium">
+                  {isToday(dueDateFilter) ? 'Today' : format(dueDateFilter, 'EEE')} ({format(dueDateFilter, 'd MMM')})
+                  <ChevronDown className="w-3 h-3 ml-1" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="end">
+                <Calendar
+                  mode="single"
+                  selected={dueDateFilter}
+                  onSelect={(date) => date && setDueDateFilter(date)}
+                  initialFocus
+                  className="p-3 pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
 
