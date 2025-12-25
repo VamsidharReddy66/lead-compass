@@ -139,20 +139,19 @@ const SignupPage = () => {
                 Independent
               </div>
             </button>
-            <button
-              type="button"
-              onClick={() => setAccountType('venture')}
-              className={`flex-1 p-3 lg:p-4 rounded-xl border-2 transition-all ${
-                accountType === 'venture'
-                  ? 'border-accent bg-accent/5'
-                  : 'border-border hover:border-accent/50'
-              }`}
+            <div
+              className="flex-1 p-3 lg:p-4 rounded-xl border-2 border-border bg-muted/50 cursor-not-allowed relative"
             >
-              <Building className={`w-5 h-5 lg:w-6 lg:h-6 mx-auto mb-1.5 lg:mb-2 ${accountType === 'venture' ? 'text-accent' : 'text-muted-foreground'}`} />
-              <div className={`text-xs lg:text-sm font-medium ${accountType === 'venture' ? 'text-foreground' : 'text-muted-foreground'}`}>
+              <Building className="w-5 h-5 lg:w-6 lg:h-6 mx-auto mb-1.5 lg:mb-2 text-muted-foreground/50" />
+              <div className="text-xs lg:text-sm font-medium text-muted-foreground/50">
                 Venture
               </div>
-            </button>
+              <div className="absolute inset-0 flex items-center justify-center bg-background/80 rounded-xl">
+                <span className="text-[10px] lg:text-xs font-medium text-muted-foreground px-2 py-1 bg-muted rounded-full">
+                  Coming Soon
+                </span>
+              </div>
+            </div>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-3 lg:space-y-4">

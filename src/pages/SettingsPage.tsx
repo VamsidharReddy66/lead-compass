@@ -25,7 +25,12 @@ import {
   EyeOff,
   Loader2,
   Trash2,
+  CreditCard,
+  Crown,
+  Zap,
+  CheckCircle,
 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 const SettingsPage = () => {
   const { profile, user } = useAuth();
@@ -256,7 +261,7 @@ const SettingsPage = () => {
         </div>
 
         <Tabs defaultValue="profile" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-flex">
+          <TabsList className="grid w-full grid-cols-6 lg:w-auto lg:inline-flex">
             <TabsTrigger value="profile" className="gap-2">
               <User className="w-4 h-4" />
               <span className="hidden sm:inline">Profile</span>
@@ -264,6 +269,10 @@ const SettingsPage = () => {
             <TabsTrigger value="personal" className="gap-2">
               <User className="w-4 h-4" />
               <span className="hidden sm:inline">Personal</span>
+            </TabsTrigger>
+            <TabsTrigger value="subscription" className="gap-2">
+              <CreditCard className="w-4 h-4" />
+              <span className="hidden sm:inline">Subscription</span>
             </TabsTrigger>
             <TabsTrigger value="security" className="gap-2">
               <Lock className="w-4 h-4" />
@@ -593,6 +602,136 @@ const SettingsPage = () => {
                     </div>
                   </div>
                 )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Subscription Tab */}
+          <TabsContent value="subscription" className="space-y-6">
+            {/* Current Plan */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      Current Plan
+                      <Badge variant="secondary" className="bg-muted">Free Trial</Badge>
+                    </CardTitle>
+                    <CardDescription>You're currently on the free trial</CardDescription>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-2xl font-bold text-foreground">₹0</p>
+                    <p className="text-xs text-muted-foreground">14 days remaining</p>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-4 p-4 bg-accent/10 rounded-xl border border-accent/20">
+                  <Zap className="w-8 h-8 text-accent" />
+                  <div className="flex-1">
+                    <p className="font-medium text-foreground">Upgrade to unlock all features</p>
+                    <p className="text-sm text-muted-foreground">Get unlimited leads, priority support, and more</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Pricing Plans */}
+            <div className="grid md:grid-cols-3 gap-4">
+              {/* Starter Plan */}
+              <Card className="relative">
+                <CardHeader>
+                  <CardTitle className="text-lg">Starter</CardTitle>
+                  <CardDescription>Perfect for getting started</CardDescription>
+                  <div className="mt-2">
+                    <span className="text-3xl font-bold text-foreground">₹499</span>
+                    <span className="text-muted-foreground">/month</span>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <ul className="space-y-2">
+                    {['Up to 100 leads', 'Basic analytics', 'Email support', 'Lead tracking', 'Mobile app access'].map((feature) => (
+                      <li key={feature} className="flex items-center gap-2 text-sm">
+                        <CheckCircle className="w-4 h-4 text-status-closed" />
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <Button variant="outline" className="w-full">
+                    Choose Starter
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Professional Plan */}
+              <Card className="relative border-accent shadow-lg">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                  <Badge className="bg-accent text-accent-foreground">
+                    <Crown className="w-3 h-3 mr-1" />
+                    Popular
+                  </Badge>
+                </div>
+                <CardHeader>
+                  <CardTitle className="text-lg">Professional</CardTitle>
+                  <CardDescription>Best for growing agents</CardDescription>
+                  <div className="mt-2">
+                    <span className="text-3xl font-bold text-foreground">₹999</span>
+                    <span className="text-muted-foreground">/month</span>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <ul className="space-y-2">
+                    {['Unlimited leads', 'Advanced analytics', 'Priority support', 'Pipeline management', 'Calendar sync', 'Custom tags & filters', 'Export reports'].map((feature) => (
+                      <li key={feature} className="flex items-center gap-2 text-sm">
+                        <CheckCircle className="w-4 h-4 text-status-closed" />
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <Button variant="accent" className="w-full">
+                    Choose Professional
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Enterprise Plan */}
+              <Card className="relative">
+                <CardHeader>
+                  <CardTitle className="text-lg">Enterprise</CardTitle>
+                  <CardDescription>For teams and agencies</CardDescription>
+                  <div className="mt-2">
+                    <span className="text-3xl font-bold text-foreground">₹2,499</span>
+                    <span className="text-muted-foreground">/month</span>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <ul className="space-y-2">
+                    {['Everything in Professional', 'Team collaboration', 'API access', 'White-label options', 'Dedicated account manager', 'Custom integrations'].map((feature) => (
+                      <li key={feature} className="flex items-center gap-2 text-sm">
+                        <CheckCircle className="w-4 h-4 text-status-closed" />
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <Button variant="outline" className="w-full">
+                    Contact Sales
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Billing History */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Billing History</CardTitle>
+                <CardDescription>View your past transactions</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-8 text-muted-foreground">
+                  <CreditCard className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                  <p className="font-medium">No billing history yet</p>
+                  <p className="text-sm">Your transactions will appear here</p>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
