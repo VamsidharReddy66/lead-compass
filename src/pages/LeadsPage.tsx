@@ -3,20 +3,37 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import LeadCard from '@/components/leads/LeadCard';
 import LeadDetailPanel from '@/components/leads/LeadDetailPanel';
 import AddLeadDialog from '@/components/leads/AddLeadDialog';
-import { useLeads, DbLead } from '@/hooks/useLeads';
-import { LeadStatus, PropertyType, LEAD_STATUS_CONFIG, PROPERTY_TYPE_LABELS, Lead } from '@/types/lead';
-import { Search, X, LayoutGrid, List, ChevronDown, Plus, Loader2 } from 'lucide-react';
+import { useLeads, DbLead, CreateLeadInput } from '@/hooks/useLeads';
+import {
+  LeadStatus,
+  PropertyType,
+  LEAD_STATUS_CONFIG,
+  PROPERTY_TYPE_LABELS,
+  Lead,
+} from '@/types/lead';
+import {
+  Search,
+  LayoutGrid,
+  List,
+  ChevronDown,
+  Plus,
+  Loader2,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 
-// Convert DB lead to frontend Lead type
+/* --------------------------------
+   DB Lead → UI Lead
+   property_types[] → propertyType
+--------------------------------- */
 const dbLeadToLead = (dbLead: DbLead): Lead => ({
   id: dbLead.id,
   name: dbLead.name,
   phone: dbLead.phone,
   email: dbLead.email || '',
-  propertyType: dbLead.property_type,
+  propertyType: dbLead.property_types?.[0] ?? 'flat', // ✅ first value for compatibility
+  propertyTypes: dbLead.property_types || ['flat'], // ✅ all values
   budgetMin: Number(dbLead.budget_min) || 0,
   budgetMax: Number(dbLead.budget_max) || 0,
   locationPreference: dbLead.location_preference || '',
@@ -32,47 +49,86 @@ const dbLeadToLead = (dbLead: DbLead): Lead => ({
   updatedAt: dbLead.updated_at,
 });
 
+// Helper to format property types as "Plot | Villa"
+const formatPropertyTypes = (types: PropertyType[]): string => {
+  if (!types || types.length === 0) return 'Flat';
+  return types
+    .map((t) => PROPERTY_TYPE_LABELS[t] || t)
+    .join(' | ');
+};
+
 const LeadsPage = () => {
   const { leads: dbLeads, loading, updateLead } = useLeads();
+
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<LeadStatus | 'all'>('all');
-  const [propertyFilter, setPropertyFilter] = useState<PropertyType | 'all'>('all');
+  const [propertyFilter, setPropertyFilter] =
+    useState<PropertyType | 'all'>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [addDialogOpen, setAddDialogOpen] = useState(false);
+
+  const [leadDialogOpen, setLeadDialogOpen] = useState(false);
+  const [dialogMode, setDialogMode] = useState<'add' | 'edit'>('add');
+  const [editLeadData, setEditLeadData] =
+    useState<CreateLeadInput | null>(null);
 
   const leads = useMemo(() => dbLeads.map(dbLeadToLead), [dbLeads]);
 
+  /* ---------------- FILTER ---------------- */
   const filteredLeads = useMemo(() => {
     return leads.filter((lead) => {
       const matchesSearch =
         lead.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         lead.phone.includes(searchQuery) ||
-        lead.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        lead.id.toLowerCase().includes(searchQuery.toLowerCase());
+        lead.email.toLowerCase().includes(searchQuery.toLowerCase());
 
-      const matchesStatus = statusFilter === 'all' || lead.status === statusFilter;
-      const matchesProperty = propertyFilter === 'all' || lead.propertyType === propertyFilter;
+      const matchesStatus =
+        statusFilter === 'all' || lead.status === statusFilter;
+
+      const matchesProperty =
+        propertyFilter === 'all' ||
+        lead.propertyType === propertyFilter;
 
       return matchesSearch && matchesStatus && matchesProperty;
     });
   }, [leads, searchQuery, statusFilter, propertyFilter]);
 
-  const clearFilters = () => {
-    setSearchQuery('');
-    setStatusFilter('all');
-    setPropertyFilter('all');
+  /* ------------ STATUS CHANGE ------------ */
+  const handleStatusChange = async (
+    leadId: string,
+    newStatus: LeadStatus
+  ) => {
+    await updateLead(leadId, {
+      status: newStatus as DbLead['status'],
+    });
+
+    setSelectedLead((prev) =>
+      prev ? { ...prev, status: newStatus } : prev
+    );
   };
 
-  const handleStatusChange = async (leadId: string, newStatus: LeadStatus) => {
-    await updateLead(leadId, { status: newStatus });
-    // Update selected lead with new status
-    if (selectedLead && selectedLead.id === leadId) {
-      setSelectedLead({ ...selectedLead, status: newStatus });
-    }
+  /* ------------ EDIT LEAD ------------ */
+  const handleEditLead = (lead: Lead) => {
+    setDialogMode('edit');
+    setEditLeadData({
+      name: lead.name,
+      phone: lead.phone,
+      email: lead.email,
+      property_types: lead.propertyTypes || [lead.propertyType], // ✅ Use all property types
+      budget_min: lead.budgetMin,
+      budget_max: lead.budgetMax,
+      location_preference: lead.locationPreference,
+      source: lead.source,
+      temperature: lead.temperature,
+      notes: lead.notes,
+    });
+    setLeadDialogOpen(true);
   };
 
-  const hasActiveFilters = searchQuery || statusFilter !== 'all' || propertyFilter !== 'all';
+  const handleUpdateLead = async (data: CreateLeadInput) => {
+    if (!selectedLead) return;
+    await updateLead(selectedLead.id, data);
+  };
 
   if (loading) {
     return (
@@ -86,76 +142,83 @@ const LeadsPage = () => {
 
   return (
     <DashboardLayout>
-      {/* Page Header */}
+      {/* HEADER */}
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="font-display text-2xl font-bold text-foreground mb-1">All Leads</h1>
-          <p className="text-muted-foreground">Manage and track all your leads in one place.</p>
+          <h1 className="font-display text-2xl font-bold">All Leads</h1>
+          <p className="text-muted-foreground">
+            Manage and track all your leads in one place.
+          </p>
         </div>
-        <Button onClick={() => setAddDialogOpen(true)}>
+        <Button
+          onClick={() => {
+            setDialogMode('add');
+            setEditLeadData(null);
+            setLeadDialogOpen(true);
+          }}
+        >
           <Plus className="w-4 h-4 mr-2" />
           Add Lead
         </Button>
       </div>
 
-      {/* Filters */}
+      {/* FILTERS */}
       <div className="bg-card rounded-2xl p-4 shadow-card mb-6">
         <div className="flex flex-col lg:flex-row gap-4">
-          {/* Search */}
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
-              type="text"
-              placeholder="Search by name, phone, email, or ID..."
+              placeholder="Search by name, phone, email..."
               className="pl-10"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
 
-          {/* Status Filter */}
-          <div className="relative">
+          <div className="relative min-w-0">
             <select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as LeadStatus | 'all')}
-              className="h-10 px-4 pr-10 rounded-lg border border-input bg-background text-sm appearance-none cursor-pointer min-w-[160px]"
+              onChange={(e) =>
+                setStatusFilter(e.target.value as LeadStatus | 'all')
+              }
+              className="h-10 px-4 pr-10 rounded-lg border bg-background text-sm min-w-[160px] appearance-none"
             >
               <option value="all">All Statuses</option>
-              {Object.entries(LEAD_STATUS_CONFIG).map(([key, config]) => (
+              {Object.entries(LEAD_STATUS_CONFIG).map(([key, cfg]) => (
                 <option key={key} value={key}>
-                  {config.label}
+                  {cfg.label}
                 </option>
               ))}
             </select>
-            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none z-10" />
           </div>
 
-          {/* Property Type Filter */}
-          <div className="relative">
+          <div className="relative min-w-0">
             <select
               value={propertyFilter}
-              onChange={(e) => setPropertyFilter(e.target.value as PropertyType | 'all')}
-              className="h-10 px-4 pr-10 rounded-lg border border-input bg-background text-sm appearance-none cursor-pointer min-w-[160px]"
+              onChange={(e) =>
+                setPropertyFilter(e.target.value as PropertyType | 'all')
+              }
+              className="h-10 px-4 pr-10 rounded-lg border bg-background text-sm min-w-[160px] appearance-none"
             >
               <option value="all">All Properties</option>
-              {Object.entries(PROPERTY_TYPE_LABELS).map(([key, label]) => (
-                <option key={key} value={key}>
-                  {label}
+              {Object.entries(PROPERTY_TYPE_LABELS).map(([k, v]) => (
+                <option key={k} value={k}>
+                  {v}
                 </option>
               ))}
             </select>
-            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none z-10" />
           </div>
 
-          {/* View Toggle */}
           <div className="flex bg-secondary rounded-lg p-1">
             <button
               onClick={() => setViewMode('grid')}
               className={cn(
-                'px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
+                'px-3 py-1.5 rounded-md',
                 viewMode === 'grid'
-                  ? 'bg-card text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
+                  ? 'bg-card shadow-sm'
+                  : 'text-muted-foreground'
               )}
             >
               <LayoutGrid className="w-4 h-4" />
@@ -163,117 +226,58 @@ const LeadsPage = () => {
             <button
               onClick={() => setViewMode('list')}
               className={cn(
-                'px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
+                'px-3 py-1.5 rounded-md',
                 viewMode === 'list'
-                  ? 'bg-card text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
+                  ? 'bg-card shadow-sm'
+                  : 'text-muted-foreground'
               )}
             >
               <List className="w-4 h-4" />
             </button>
           </div>
         </div>
+      </div>
 
-        {/* Active Filters */}
-        {hasActiveFilters && (
-          <div className="flex items-center gap-2 mt-4 pt-4 border-t border-border">
-            <span className="text-sm text-muted-foreground">Filters:</span>
-            {searchQuery && (
-              <span className="inline-flex items-center gap-1 text-xs bg-accent/10 text-accent px-2 py-1 rounded-full">
-                Search: {searchQuery}
-                <button onClick={() => setSearchQuery('')}>
-                  <X className="w-3 h-3" />
-                </button>
-              </span>
-            )}
-            {statusFilter !== 'all' && (
-              <span className="inline-flex items-center gap-1 text-xs bg-accent/10 text-accent px-2 py-1 rounded-full">
-                {LEAD_STATUS_CONFIG[statusFilter].label}
-                <button onClick={() => setStatusFilter('all')}>
-                  <X className="w-3 h-3" />
-                </button>
-              </span>
-            )}
-            {propertyFilter !== 'all' && (
-              <span className="inline-flex items-center gap-1 text-xs bg-accent/10 text-accent px-2 py-1 rounded-full">
-                {PROPERTY_TYPE_LABELS[propertyFilter]}
-                <button onClick={() => setPropertyFilter('all')}>
-                  <X className="w-3 h-3" />
-                </button>
-              </span>
-            )}
-            <button
-              onClick={clearFilters}
-              className="text-xs text-muted-foreground hover:text-foreground ml-2"
-            >
-              Clear all
-            </button>
-          </div>
+      {/* LEADS */}
+      <div
+        className={cn(
+          viewMode === 'grid'
+            ? 'grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4'
+            : 'space-y-3'
         )}
+      >
+        {filteredLeads.map((lead) => (
+          <LeadCard
+            key={lead.id}
+            lead={lead}
+            onClick={() => setSelectedLead(lead)}
+          />
+        ))}
       </div>
 
-      {/* Results Count */}
-      <div className="mb-4 flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
-          Showing {filteredLeads.length} of {leads.length} leads
-        </p>
-      </div>
-
-      {/* Leads Grid */}
-      {viewMode === 'grid' ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {filteredLeads.map((lead) => (
-            <LeadCard key={lead.id} lead={lead} onClick={() => setSelectedLead(lead)} />
-          ))}
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {filteredLeads.map((lead) => (
-            <LeadCard key={lead.id} lead={lead} onClick={() => setSelectedLead(lead)} />
-          ))}
-        </div>
-      )}
-
-      {/* Empty State */}
-      {filteredLeads.length === 0 && (
-        <div className="text-center py-16">
-          <div className="w-16 h-16 rounded-full bg-secondary mx-auto mb-4 flex items-center justify-center">
-            <Search className="w-8 h-8 text-muted-foreground" />
-          </div>
-          <h3 className="font-semibold text-foreground mb-2">No leads found</h3>
-          <p className="text-muted-foreground mb-4">
-            {leads.length === 0 ? 'Get started by adding your first lead' : 'Try adjusting your search or filters'}
-          </p>
-          {leads.length === 0 ? (
-            <Button onClick={() => setAddDialogOpen(true)}>
-              <Plus className="w-4 h-4 mr-2" />
-              Add Lead
-            </Button>
-          ) : (
-            <Button variant="outline" onClick={clearFilters}>
-              Clear Filters
-            </Button>
-          )}
-        </div>
-      )}
-
-      {/* Lead Detail Panel */}
+      {/* DETAIL PANEL */}
       {selectedLead && (
         <>
           <div
-            className="fixed inset-0 bg-foreground/20 backdrop-blur-sm z-40"
+            className="fixed inset-0 bg-foreground/20 z-40"
             onClick={() => setSelectedLead(null)}
           />
-          <LeadDetailPanel 
-            lead={selectedLead} 
-            onClose={() => setSelectedLead(null)} 
+          <LeadDetailPanel
+            lead={selectedLead}
+            onClose={() => setSelectedLead(null)}
             onStatusChange={handleStatusChange}
           />
         </>
       )}
 
-      {/* Add Lead Dialog */}
-      <AddLeadDialog open={addDialogOpen} onOpenChange={setAddDialogOpen} />
+      {/* ADD / EDIT */}
+      <AddLeadDialog
+        open={leadDialogOpen}
+        onOpenChange={setLeadDialogOpen}
+        mode={dialogMode}
+        initialData={editLeadData || undefined}
+        onUpdate={handleUpdateLead}
+      />
     </DashboardLayout>
   );
 };
