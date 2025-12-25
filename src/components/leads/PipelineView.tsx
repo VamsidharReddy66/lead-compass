@@ -21,6 +21,17 @@ const pipelineStages: LeadStatus[] = [
   'lost',
 ];
 
+// Short labels for mobile chips
+const mobileStageLabels: Record<LeadStatus, string> = {
+  'new': 'New',
+  'contacted': 'Contacted',
+  'site-visit-scheduled': 'Visit Sched',
+  'site-visit-completed': 'Visit Done',
+  'negotiation': 'Negotiation',
+  'closed': 'Closed',
+  'lost': 'Lost',
+};
+
 const PipelineView = ({ leads, onLeadClick, onLeadStatusChange }: PipelineViewProps) => {
   const [draggedLead, setDraggedLead] = useState<Lead | null>(null);
   const [dragOverStage, setDragOverStage] = useState<LeadStatus | null>(null);
@@ -87,7 +98,7 @@ const PipelineView = ({ leads, onLeadClick, onLeadStatusChange }: PipelineViewPr
                     : 'bg-secondary text-muted-foreground'
                 )}
               >
-                {config.label.split(' ')[0]} ({count})
+                {mobileStageLabels[stage]} ({count})
               </button>
             );
           })}
@@ -180,7 +191,7 @@ const PipelineView = ({ leads, onLeadClick, onLeadStatusChange }: PipelineViewPr
                       // This is a hint - user needs to tap a lead first
                     }}
                   >
-                    {config.label.split(' ')[0]}
+                    {mobileStageLabels[stage]}
                   </button>
                 );
               })}
