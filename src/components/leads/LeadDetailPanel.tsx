@@ -254,8 +254,15 @@ const LeadDetailPanel = ({ lead, onClose, onStatusChange }: LeadDetailPanelProps
             size="sm"
             className="flex-1"
             onClick={() => {
-              const cleanPhone = lead.phone.replace(/\D/g, '');
-              window.open(`https://wa.me/${cleanPhone}`, '_blank');
+              let cleanPhone = lead.phone.replace(/\D/g, '');
+              // Add country code if not present (assuming India +91)
+              if (cleanPhone.length === 10) {
+                cleanPhone = '91' + cleanPhone;
+              }
+              const message = encodeURIComponent(
+                `Hi ${lead.name}, this is regarding your property inquiry. How can I assist you today?`
+              );
+              window.location.href = `https://wa.me/${cleanPhone}?text=${message}`;
             }}
           >
             <MessageSquare className="w-4 h-4 mr-2" /> WhatsApp
