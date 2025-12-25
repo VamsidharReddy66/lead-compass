@@ -27,6 +27,7 @@ export interface Lead {
   phone: string;
   email?: string;
   propertyType: PropertyType;
+  propertyTypes: PropertyType[];
   budgetMin: number;
   budgetMax: number;
   locationPreference: string;
