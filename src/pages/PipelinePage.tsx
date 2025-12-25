@@ -87,13 +87,13 @@ const PipelinePage = () => {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="space-y-4 md:space-y-6">
         {/* Header */}
         <div>
-          <h1 className="text-3xl font-display font-bold text-foreground">
+          <h1 className="text-xl md:text-3xl font-display font-bold text-foreground">
             Pipeline
           </h1>
-          <p className="text-muted-foreground mt-1">
+          <p className="text-sm md:text-base text-muted-foreground mt-1 hidden sm:block">
             Drag and drop leads between stages to update their status
           </p>
         </div>
