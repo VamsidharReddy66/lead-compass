@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import TasksMeetingsWidget from '@/components/dashboard/TasksMeetingsWidget';
 import { mockLeads } from '@/data/mockData';
 import { LEAD_STATUS_CONFIG, LEAD_SOURCE_LABELS, LeadStatus, LeadSource } from '@/types/lead';
 import { TrendingUp, Users, Target, ArrowUpRight, Flame, Calendar, CheckCircle } from 'lucide-react';
@@ -145,6 +146,9 @@ const DashboardPage = () => {
           <div className="text-sm text-muted-foreground">Conversion Rate</div>
         </div>
       </div>
+
+      {/* Tasks & Meetings Widget */}
+      <TasksMeetingsWidget />
 
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Conversion Funnel */}

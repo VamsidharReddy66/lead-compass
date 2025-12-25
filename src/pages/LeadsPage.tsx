@@ -32,8 +32,7 @@ const dbLeadToLead = (dbLead: DbLead): Lead => ({
   name: dbLead.name,
   phone: dbLead.phone,
   email: dbLead.email || '',
-  propertyType: dbLead.property_types?.[0] ?? 'flat', // ✅ first value for compatibility
-  propertyTypes: dbLead.property_types || ['flat'], // ✅ all values
+  propertyType: dbLead.property_types?.[0] ?? 'flat',
   budgetMin: Number(dbLead.budget_min) || 0,
   budgetMax: Number(dbLead.budget_max) || 0,
   locationPreference: dbLead.location_preference || '',
@@ -114,7 +113,7 @@ const LeadsPage = () => {
       name: lead.name,
       phone: lead.phone,
       email: lead.email,
-      property_types: lead.propertyTypes || [lead.propertyType], // ✅ Use all property types
+      property_types: [lead.propertyType],
       budget_min: lead.budgetMin,
       budget_max: lead.budgetMax,
       location_preference: lead.locationPreference,
