@@ -305,7 +305,7 @@ const LeadsPage = () => {
           setEditLeadData(null);
           setLeadDialogOpen(true);
         }}
-        className="fixed bottom-6 left-6 z-30 rounded-full w-14 h-14 shadow-lg"
+        className="fixed bottom-20 right-6 z-30 rounded-full w-14 h-14 shadow-lg"
         size="icon"
       >
         <Plus className="w-6 h-6" />
