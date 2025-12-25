@@ -21,10 +21,18 @@ interface Profile {
   venture_id: string | null;
 }
 
+interface UserRole {
+  role: AppRole;
+  venture_id: string | null;
+}
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   profile: Profile | null;
+  userRole: UserRole | null;
+  isVentureAdmin: boolean;
+  isAgent: boolean;
   loading: boolean;
   signUp: (
     email: string,
@@ -50,7 +58,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const isVentureAdmin = userRole?.role === 'venture_admin';
+  const isAgent = userRole?.role === 'venture_agent' || userRole?.role === 'independent_agent';
 
   /**
    * Fetch profile ONLY
@@ -79,6 +91,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   /**
+   * Fetch user role
+   */
+  const fetchUserRole = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('role, venture_id')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (error) {
+        console.error('User role fetch error:', error);
+        setUserRole(null);
+        return;
+      }
+
+      setUserRole(data ? { role: data.role, venture_id: data.venture_id } : null);
+    } catch (err) {
+      console.error('Unexpected user role error:', err);
+      setUserRole(null);
+    }
+  };
+
+  /**
    * AUTH STATE HANDLING — SINGLE SOURCE OF TRUTH
    */
   useEffect(() => {
@@ -91,8 +127,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       if (session?.user) {
         fetchProfile(session.user.id);
+        fetchUserRole(session.user.id);
       } else {
         setProfile(null);
+        setUserRole(null);
       }
 
       // 🔑 CRITICAL: loading must ALWAYS end here
@@ -106,6 +144,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       if (session?.user) {
         fetchProfile(session.user.id);
+        fetchUserRole(session.user.id);
       }
 
       setLoading(false);
@@ -167,6 +206,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(null);
     setSession(null);
     setProfile(null);
+    setUserRole(null);
     toast.success('Signed out successfully');
   };
 
@@ -176,6 +216,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         user,
         session,
         profile,
+        userRole,
+        isVentureAdmin,
+        isAgent,
         loading,
         signUp,
         signIn,

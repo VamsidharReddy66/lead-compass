@@ -25,17 +25,16 @@ export interface Lead {
   id: string;
   name: string;
   phone: string;
-  email: string;
+  email?: string;
   propertyType: PropertyType;
-  propertyTypes: PropertyType[]; // ✅ All selected property types
   budgetMin: number;
   budgetMax: number;
   locationPreference: string;
   source: LeadSource;
   assignedAgentId: string;
   status: LeadStatus;
-  followUpDate: string | null;
-  followUpTime: string | null;
+  followUpDate?: string | null;
+  followUpTime?: string | null;
   notes: string;
   tags: string[];
   temperature: LeadTemperature;
