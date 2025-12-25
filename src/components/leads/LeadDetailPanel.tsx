@@ -279,7 +279,9 @@ const LeadDetailPanel = ({ lead, onClose, onStatusChange }: LeadDetailPanelProps
         <div className="bg-secondary/50 rounded-xl p-4 grid grid-cols-2 gap-4 text-sm">
           <div>
             <div className="text-muted-foreground text-xs">Property Type</div>
-            {PROPERTY_TYPE_LABELS[lead.propertyType]}
+            {lead.propertyTypes && lead.propertyTypes.length > 0
+              ? lead.propertyTypes.map((pt) => PROPERTY_TYPE_LABELS[pt] || pt).join(' | ')
+              : PROPERTY_TYPE_LABELS[lead.propertyType]}
           </div>
           <div>
             <div className="text-muted-foreground text-xs">Budget</div>
@@ -387,7 +389,7 @@ const LeadDetailPanel = ({ lead, onClose, onStatusChange }: LeadDetailPanelProps
           name: lead.name,
           phone: lead.phone,
           email: lead.email,
-          property_types: [lead.propertyType],
+          property_types: lead.propertyTypes || [lead.propertyType],
           budget_min: lead.budgetMin,
           budget_max: lead.budgetMax,
           location_preference: lead.locationPreference || '',

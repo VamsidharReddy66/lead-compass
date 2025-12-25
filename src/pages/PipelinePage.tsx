@@ -3,7 +3,7 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import PipelineView from '@/components/leads/PipelineView';
 import LeadDetailPanel from '@/components/leads/LeadDetailPanel';
 import { useLeads } from '@/hooks/useLeads';
-import { Lead, LeadStatus } from '@/types/lead';
+import { Lead, LeadStatus, PropertyType } from '@/types/lead';
 import { Loader2 } from 'lucide-react';
 
 const PipelinePage = () => {
@@ -51,6 +51,7 @@ const PipelinePage = () => {
         phone: lead.phone,
         email: lead.email || undefined,
         propertyType: lead.property_types?.[0] ?? 'flat',
+        propertyTypes: (lead.property_types ?? ['flat']) as PropertyType[],
         budgetMin: lead.budget_min ?? 0,
         budgetMax: lead.budget_max ?? 0,
         locationPreference: lead.location_preference || '',

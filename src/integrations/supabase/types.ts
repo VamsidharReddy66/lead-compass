@@ -80,6 +80,7 @@ export type Database = {
           notes: string | null
           phone: string
           property_type: Database["public"]["Enums"]["property_type"]
+          property_types: string[] | null
           source: Database["public"]["Enums"]["lead_source"]
           status: Database["public"]["Enums"]["lead_status"]
           tags: string[] | null
@@ -101,6 +102,7 @@ export type Database = {
           notes?: string | null
           phone: string
           property_type?: Database["public"]["Enums"]["property_type"]
+          property_types?: string[] | null
           source?: Database["public"]["Enums"]["lead_source"]
           status?: Database["public"]["Enums"]["lead_status"]
           tags?: string[] | null
@@ -122,6 +124,7 @@ export type Database = {
           notes?: string | null
           phone?: string
           property_type?: Database["public"]["Enums"]["property_type"]
+          property_types?: string[] | null
           source?: Database["public"]["Enums"]["lead_source"]
           status?: Database["public"]["Enums"]["lead_status"]
           tags?: string[] | null
