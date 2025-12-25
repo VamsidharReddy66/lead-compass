@@ -156,94 +156,79 @@ const LeadsPage = () => {
   return (
     <DashboardLayout>
       {/* FILTERS */}
-      <div className="bg-card rounded-2xl p-4 shadow-card mb-6">
-        <div className="flex flex-col gap-3">
-          {/* Search */}
-          <div className="relative w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Search by name, phone, email..."
-              className="pl-10"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
+      <div className="space-y-2 mb-4">
+        {/* Search */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Search by name, phone, email..."
+            className="pl-9 h-9 text-sm bg-card border-border"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
 
-          {/* Filter Row */}
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="relative flex-1 min-w-0">
-              <select
-                value={statusFilter}
-                onChange={(e) =>
-                  setStatusFilter(e.target.value as LeadStatus | 'all')
-                }
-                className="w-full h-10 px-4 pr-10 rounded-lg border bg-background text-sm appearance-none"
-              >
-                <option value="all">All Statuses</option>
-                {Object.entries(LEAD_STATUS_CONFIG).map(([key, cfg]) => (
-                  <option key={key} value={key}>
-                    {cfg.label}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none z-10" />
-            </div>
+        {/* Status Dropdown */}
+        <div className="relative">
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as LeadStatus | 'all')}
+            className="w-full h-9 px-3 pr-8 rounded-lg border border-border bg-card text-sm appearance-none"
+          >
+            <option value="all">All Statuses</option>
+            {Object.entries(LEAD_STATUS_CONFIG).map(([key, cfg]) => (
+              <option key={key} value={key}>{cfg.label}</option>
+            ))}
+          </select>
+          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none text-muted-foreground" />
+        </div>
 
-            <div className="relative flex-1 min-w-0">
-              <select
-                value={propertyFilter}
-                onChange={(e) =>
-                  setPropertyFilter(e.target.value as PropertyType | 'all')
-                }
-                className="w-full h-10 px-4 pr-10 rounded-lg border bg-background text-sm appearance-none"
-              >
-                <option value="all">All Properties</option>
-                {Object.entries(PROPERTY_TYPE_LABELS).map(([k, v]) => (
-                  <option key={k} value={k}>
-                    {v}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none z-10" />
-            </div>
-          </div>
+        {/* Property Dropdown */}
+        <div className="relative">
+          <select
+            value={propertyFilter}
+            onChange={(e) => setPropertyFilter(e.target.value as PropertyType | 'all')}
+            className="w-full h-9 px-3 pr-8 rounded-lg border border-border bg-card text-sm appearance-none"
+          >
+            <option value="all">All Properties</option>
+            {Object.entries(PROPERTY_TYPE_LABELS).map(([k, v]) => (
+              <option key={k} value={k}>{v}</option>
+            ))}
+          </select>
+          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none text-muted-foreground" />
+        </div>
 
-          {/* Actions Row */}
-          <div className="flex items-center justify-between gap-3">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setDuplicateDialogOpen(true)}
-              className="text-xs"
+        {/* Actions Row */}
+        <div className="flex items-center justify-between">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setDuplicateDialogOpen(true)}
+            className="h-8 text-xs px-3"
+          >
+            <Copy className="w-3 h-3 mr-1.5" />
+            Find Duplicates
+          </Button>
+
+          <div className="flex bg-secondary rounded-lg p-0.5">
+            <button
+              onClick={() => setViewMode('grid')}
+              className={cn(
+                'p-1.5 rounded-md',
+                viewMode === 'grid' ? 'bg-card shadow-sm' : 'text-muted-foreground'
+              )}
             >
-              <Copy className="w-3.5 h-3.5 mr-1.5" />
-              Find Duplicates
-            </Button>
-
-            <div className="flex bg-secondary rounded-lg p-1">
-              <button
-                onClick={() => setViewMode('grid')}
-                className={cn(
-                  'px-3 py-1.5 rounded-md',
-                  viewMode === 'grid'
-                    ? 'bg-card shadow-sm'
-                    : 'text-muted-foreground'
-                )}
-              >
-                <LayoutGrid className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={cn(
-                  'px-3 py-1.5 rounded-md',
-                  viewMode === 'list'
-                    ? 'bg-card shadow-sm'
-                    : 'text-muted-foreground'
-                )}
-              >
-                <List className="w-4 h-4" />
-              </button>
-            </div>
+              <LayoutGrid className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setViewMode('list')}
+              className={cn(
+                'p-1.5 rounded-md',
+                viewMode === 'list' ? 'bg-card shadow-sm' : 'text-muted-foreground'
+              )}
+            >
+              <List className="w-4 h-4" />
+            </button>
           </div>
         </div>
       </div>
