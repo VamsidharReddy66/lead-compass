@@ -166,51 +166,51 @@ const TasksMeetingsWidget = () => {
   }, [typeFilteredMeetings]);
 
   return (
-    <div className="grid lg:grid-cols-3 gap-6 mb-8">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 mb-8">
       {/* Tasks/Meetings List */}
-      <div className="lg:col-span-2 bg-card rounded-2xl p-6 shadow-card">
+      <div className="lg:col-span-2 bg-card rounded-2xl p-4 md:p-6 shadow-card">
         {/* Header with view toggles */}
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
           <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">Show</span>
+            <span className="text-sm text-muted-foreground hidden sm:inline">Show</span>
             <Button
               variant={selectedViews.includes('tasks') ? 'default' : 'outline'}
               size="sm"
-              className="h-8 gap-1.5"
+              className="h-8 gap-1.5 text-xs sm:text-sm"
               onClick={() => toggleView('tasks')}
             >
               <CheckSquare className="w-4 h-4" />
-              Tasks
+              <span className="hidden xs:inline">Tasks</span>
             </Button>
             <Button
               variant={selectedViews.includes('meetings') ? 'default' : 'outline'}
               size="sm"
-              className="h-8 gap-1.5"
+              className="h-8 gap-1.5 text-xs sm:text-sm"
               onClick={() => toggleView('meetings')}
             >
               <CalendarIcon className="w-4 h-4" />
-              Meetings
+              <span className="hidden xs:inline">Meetings</span>
             </Button>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" className="h-8 gap-1.5">
+            <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs sm:text-sm">
               <CheckSquare className="w-4 h-4" />
-              Add task
+              <span className="hidden sm:inline">Add task</span>
               <ChevronDown className="w-3 h-3" />
             </Button>
           </div>
         </div>
 
         {/* Filter tabs with meeting type filter */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+          <div className="flex items-center gap-1 sm:gap-2 overflow-x-auto pb-1">
           {(['all', 'open', 'overdue', 'completed'] as FilterType[]).map((f) => (
               <Button
                 key={f}
                 variant={filter === f ? 'default' : 'ghost'}
                 size="sm"
                 className={cn(
-                  'h-8 capitalize',
+                  'h-7 sm:h-8 capitalize text-xs sm:text-sm px-2 sm:px-3 whitespace-nowrap',
                   filter === f ? '' : 'text-muted-foreground',
                   f === 'overdue' && filterCounts.overdue > 0 && 'text-destructive hover:text-destructive'
                 )}
@@ -225,7 +225,7 @@ const TasksMeetingsWidget = () => {
           
           {/* Meeting Type Filter */}
           <Select value={meetingTypeFilter} onValueChange={(v) => setMeetingTypeFilter(v as MeetingType)}>
-            <SelectTrigger className="w-[150px] h-8">
+            <SelectTrigger className="w-full sm:w-[150px] h-8 text-xs sm:text-sm">
               <Filter className="w-3.5 h-3.5 mr-2" />
               <SelectValue placeholder="Filter by type" />
             </SelectTrigger>
@@ -319,8 +319,8 @@ const TasksMeetingsWidget = () => {
         </div>
       </div>
 
-      {/* Calendar Sidebar */}
-      <div className="bg-card rounded-2xl p-6 shadow-card">
+      {/* Calendar Sidebar - Hidden on mobile, shown on large screens */}
+      <div className="hidden lg:block bg-card rounded-2xl p-4 md:p-6 shadow-card">
         <div className="flex items-center justify-between mb-4">
           <h4 className="font-semibold text-foreground">My calendar</h4>
           <Button variant="ghost" size="icon" className="h-8 w-8">

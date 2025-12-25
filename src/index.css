@@ -263,3 +263,22 @@
   background: hsl(var(--accent) / 0.1);
   border: 2px dashed hsl(var(--accent));
 }
+
+/* Safe area padding for iOS devices */
+.safe-area-pb {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Mobile touch improvements */
+@media (max-width: 768px) {
+  button, a {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+/* Extra small breakpoint */
+@media (min-width: 400px) {
+  .xs\\:inline {
+    display: inline;
+  }
+}
