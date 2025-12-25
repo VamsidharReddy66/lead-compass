@@ -70,6 +70,8 @@ const TasksMeetingsWidget = () => {
   const [meetingTypeFilter, setMeetingTypeFilter] = useState<MeetingType>('all');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [dueDateFilter, setDueDateFilter] = useState<Date>(new Date());
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
+  
   // Dialog states
   const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null);
   const [showMeetingDetail, setShowMeetingDetail] = useState(false);
@@ -139,9 +141,9 @@ const TasksMeetingsWidget = () => {
 
   const todayMeetings = useMemo(() => {
     return filteredMeetings.filter((m) =>
-      isSameDay(new Date(m.scheduled_at), selectedDate)
+      isSameDay(new Date(m.scheduled_at), dueDateFilter)
     );
-  }, [filteredMeetings, selectedDate]);
+  }, [filteredMeetings, dueDateFilter]);
 
   const timeSlots: TimeSlot[] = useMemo(() => {
     const slots: TimeSlot[] = [];
@@ -217,7 +219,7 @@ const TasksMeetingsWidget = () => {
         <div className="flex items-center justify-end mb-4 pb-4 border-b">
           <div className="flex items-center gap-2 text-sm">
             <span className="text-muted-foreground">Due date:</span>
-            <Popover>
+            <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
               <PopoverTrigger asChild>
                 <Button variant="link" size="sm" className="h-auto p-0 text-primary font-medium">
                   {isToday(dueDateFilter) ? 'Today' : format(dueDateFilter, 'EEE')} ({format(dueDateFilter, 'd MMM')})
@@ -228,7 +230,12 @@ const TasksMeetingsWidget = () => {
                 <Calendar
                   mode="single"
                   selected={dueDateFilter}
-                  onSelect={(date) => date && setDueDateFilter(date)}
+                  onSelect={(date) => {
+                    if (date) {
+                      setDueDateFilter(date);
+                      setDatePickerOpen(false);
+                    }
+                  }}
                   initialFocus
                   className="p-3 pointer-events-auto"
                 />
