@@ -8,6 +8,7 @@ interface LeadCardProps {
   lead: Lead;
   onClick?: () => void;
   isDragging?: boolean;
+  showOverdueIndicator?: boolean;
 }
 
 const temperatureIcons = {
@@ -22,13 +23,13 @@ const temperatureColors = {
   cold: 'text-lead-cold',
 };
 
-const LeadCard = ({ lead, onClick, isDragging }: LeadCardProps) => {
+const LeadCard = ({ lead, onClick, isDragging, showOverdueIndicator = false }: LeadCardProps) => {
   const TempIcon = temperatureIcons[lead.temperature];
   const statusConfig = LEAD_STATUS_CONFIG[lead.status];
 
   // Check if lead is overdue (follow-up date is in the past)
   const isOverdue = useMemo(() => {
-    if (!lead.followUpDate) return false;
+    if (!showOverdueIndicator || !lead.followUpDate) return false;
     const followUpDateTime = new Date(lead.followUpDate);
     if (lead.followUpTime) {
       const [hours, minutes] = lead.followUpTime.split(':').map(Number);
@@ -37,7 +38,7 @@ const LeadCard = ({ lead, onClick, isDragging }: LeadCardProps) => {
       followUpDateTime.setHours(23, 59, 59, 999);
     }
     return followUpDateTime < new Date();
-  }, [lead.followUpDate, lead.followUpTime]);
+  }, [lead.followUpDate, lead.followUpTime, showOverdueIndicator]);
 
   return (
     <div
