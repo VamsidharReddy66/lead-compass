@@ -41,7 +41,13 @@ const LeadCard = ({ lead, onClick, isDragging }: LeadCardProps) => {
             <h3 className="font-semibold text-foreground truncate">{lead.name}</h3>
             <TempIcon className={cn('w-4 h-4 flex-shrink-0', temperatureColors[lead.temperature])} />
           </div>
-          <p className="text-sm text-muted-foreground">{PROPERTY_TYPE_LABELS[lead.propertyType]}</p>
+          <p className="text-sm text-muted-foreground">
+            {lead.propertyTypes && lead.propertyTypes.length > 0
+              ? lead.propertyTypes
+                  .map((pt) => PROPERTY_TYPE_LABELS[pt] || pt)
+                  .join(' | ')
+              : PROPERTY_TYPE_LABELS[lead.propertyType]}
+          </p>
         </div>
         <span className={cn('text-xs font-medium px-2 py-1 rounded-full', statusConfig.color, statusConfig.bgColor)}>
           {statusConfig.label}
