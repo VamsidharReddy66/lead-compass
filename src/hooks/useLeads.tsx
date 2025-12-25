@@ -253,6 +253,41 @@ export const useLeads = () => {
   };
 
   /* ---------------------
+     MERGE LEADS
+  ---------------------- */
+  const mergeLeads = async (keepLeadId: string, deleteLeadIds: string[]) => {
+    if (!user) return false;
+
+    try {
+      // Delete the duplicate leads (keeping the selected one)
+      for (const id of deleteLeadIds) {
+        const { error } = await supabase.from('leads').delete().eq('id', id);
+        if (error) throw error;
+      }
+
+      setLeads((prev) => prev.filter((l) => !deleteLeadIds.includes(l.id)));
+
+      // Log activity for the kept lead
+      await supabase.from('activities').insert({
+        lead_id: keepLeadId,
+        agent_id: user.id,
+        activity_type: 'merge',
+        description: `Merged ${deleteLeadIds.length} duplicate lead(s) into this record`,
+        previous_value: null,
+        new_value: null,
+        meeting_id: null,
+      });
+
+      toast.success(`Merged ${deleteLeadIds.length} duplicate(s) successfully`);
+      return true;
+    } catch (err) {
+      console.error('Merge leads error:', err);
+      toast.error('Failed to merge leads');
+      return false;
+    }
+  };
+
+  /* ---------------------
      SEARCH
   ---------------------- */
   const searchLeads = useCallback(
@@ -336,6 +371,7 @@ export const useLeads = () => {
     createLead,
     updateLead,
     deleteLead,
+    mergeLeads,
     searchLeads,
     refetch: fetchLeads,
   };
