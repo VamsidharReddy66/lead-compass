@@ -288,6 +288,7 @@ export type Database = {
           id: string
           invited_at: string
           joined_at: string | null
+          phone: string | null
           status: string
           venture_id: string
         }
@@ -297,6 +298,7 @@ export type Database = {
           id?: string
           invited_at?: string
           joined_at?: string | null
+          phone?: string | null
           status?: string
           venture_id: string
         }
@@ -306,6 +308,7 @@ export type Database = {
           id?: string
           invited_at?: string
           joined_at?: string | null
+          phone?: string | null
           status?: string
           venture_id?: string
         }

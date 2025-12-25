@@ -8,6 +8,7 @@ export interface VentureAgent {
   venture_id: string;
   status: string;
   email: string | null;
+  phone: string | null;
   invited_at: string;
   joined_at: string | null;
   profile?: {
@@ -53,10 +54,15 @@ export const useVentureAgents = () => {
               profile: profileData || undefined
             };
           }
-          // For pending invitations, return agent with email from the record
+          // For pending invitations, return agent with phone/email from the record
           return {
             ...agent,
-            profile: agent.email ? { email: agent.email, full_name: null, phone: null, avatar_url: null } : undefined
+            profile: (agent.email || agent.phone) ? { 
+              email: agent.email || '', 
+              full_name: null, 
+              phone: agent.phone, 
+              avatar_url: null 
+            } : undefined
           };
         })
       );
