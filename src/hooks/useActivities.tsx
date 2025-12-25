@@ -103,8 +103,13 @@ export const useActivities = (leadId?: string) => {
           filter: `lead_id=eq.${leadId}`,
         },
         (payload) => {
-          setActivities((prev) => [payload.new as Activity, ...prev]);
-        }
+            const newActivity = payload.new as Activity;
+            setActivities((prev) => {
+              // Avoid duplicates: if activity already exists (optimistic insert), skip
+              if (prev.some((a) => a.id === newActivity.id)) return prev;
+              return [newActivity, ...prev];
+            });
+          }
       )
       .subscribe();
 
