@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import LeadCard from '@/components/leads/LeadCard';
 import LeadDetailPanel from '@/components/leads/LeadDetailPanel';
@@ -74,6 +74,19 @@ const LeadsPage = () => {
 
   const leads = useMemo(() => dbLeads.map(dbLeadToLead), [dbLeads]);
 
+  // Keep selectedLead in sync with updated leads data
+  useEffect(() => {
+    if (selectedLead) {
+      const updatedLead = leads.find((l) => l.id === selectedLead.id);
+      if (updatedLead) {
+        setSelectedLead(updatedLead);
+      } else {
+        // Lead was deleted
+        setSelectedLead(null);
+      }
+    }
+  }, [leads]);
+
   /* ---------------- FILTER ---------------- */
   const filteredLeads = useMemo(() => {
     return leads.filter((lead) => {
@@ -101,10 +114,7 @@ const LeadsPage = () => {
     await updateLead(leadId, {
       status: newStatus as DbLead['status'],
     });
-
-    setSelectedLead((prev) =>
-      prev ? { ...prev, status: newStatus } : prev
-    );
+    // No need to manually update selectedLead - it will sync from useEffect above
   };
 
   /* ------------ EDIT LEAD ------------ */

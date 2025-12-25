@@ -182,8 +182,34 @@ export const useMeetings = () => {
       .channel('meetings-changes')
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'meetings' },
-        fetchMeetings
+        { event: 'INSERT', schema: 'public', table: 'meetings' },
+        (payload) => {
+          const newMeeting = payload.new as Meeting;
+          setMeetings((prev) => {
+            if (prev.some((m) => m.id === newMeeting.id)) return prev;
+            return [...prev, newMeeting].sort(
+              (a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime()
+            );
+          });
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'meetings' },
+        (payload) => {
+          const updated = payload.new as Meeting;
+          setMeetings((prev) =>
+            prev.map((m) => (m.id === updated.id ? updated : m))
+          );
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'meetings' },
+        (payload) => {
+          const deleted = payload.old as { id: string };
+          setMeetings((prev) => prev.filter((m) => m.id !== deleted.id));
+        }
       )
       .subscribe();
 
