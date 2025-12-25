@@ -238,10 +238,26 @@ const LeadDetailPanel = ({ lead, onClose, onStatusChange }: LeadDetailPanelProps
 
         {/* QUICK ACTIONS */}
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="flex-1">
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1"
+            onClick={() => {
+              const cleanPhone = lead.phone.replace(/\D/g, '');
+              window.open(`tel:${cleanPhone}`, '_self');
+            }}
+          >
             <PhoneCall className="w-4 h-4 mr-2" /> Call
           </Button>
-          <Button variant="outline" size="sm" className="flex-1">
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1"
+            onClick={() => {
+              const cleanPhone = lead.phone.replace(/\D/g, '');
+              window.open(`https://wa.me/${cleanPhone}`, '_blank');
+            }}
+          >
             <MessageSquare className="w-4 h-4 mr-2" /> WhatsApp
           </Button>
           <Button
