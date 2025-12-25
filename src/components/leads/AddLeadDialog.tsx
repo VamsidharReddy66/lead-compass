@@ -20,7 +20,7 @@ const emptyForm: CreateLeadInput = {
   name: "",
   phone: "",
   email: "",
-  property_types: [],
+  property_type: "flat",
   budget_min: 0,
   budget_max: 0,
   location_preference: "",
@@ -41,7 +41,7 @@ const AddLeadDialog = ({ open, onOpenChange, mode = "add", initialData, onUpdate
     if (mode === "edit" && initialData) {
       setFormData({
         ...initialData,
-        property_types: initialData.property_types ?? [],
+        property_type: initialData.property_type ?? "flat",
       });
     }
 
@@ -51,18 +51,13 @@ const AddLeadDialog = ({ open, onOpenChange, mode = "add", initialData, onUpdate
   }, [mode, initialData, open]);
 
   /* -----------------------------
-     MULTI SELECT HANDLER
+     PROPERTY TYPE HANDLER
   ------------------------------ */
-  const togglePropertyType = (type: PropertyType) => {
-    setFormData((prev) => {
-      const exists = prev.property_types?.includes(type);
-      return {
-        ...prev,
-        property_types: exists
-          ? prev.property_types?.filter((t) => t !== type)
-          : [...(prev.property_types ?? []), type],
-      };
-    });
+  const selectPropertyType = (type: PropertyType) => {
+    setFormData((prev) => ({
+      ...prev,
+      property_type: type,
+    }));
   };
 
   /* -----------------------------
@@ -121,19 +116,19 @@ const AddLeadDialog = ({ open, onOpenChange, mode = "add", initialData, onUpdate
             />
           </div>
 
-          {/* PROPERTY TYPES (MULTI) */}
+          {/* PROPERTY TYPE */}
           <div>
-            <Label>Property Types</Label>
+            <Label>Property Type</Label>
             <div className="flex flex-wrap gap-2 mt-2">
               {Object.entries(PROPERTY_TYPE_LABELS).map(([key, label]) => {
                 const typedKey = key as PropertyType;
-                const active = formData.property_types?.includes(typedKey);
+                const active = formData.property_type === typedKey;
 
                 return (
                   <button
                     type="button"
                     key={key}
-                    onClick={() => togglePropertyType(typedKey)}
+                    onClick={() => selectPropertyType(typedKey)}
                     className={`px-3 py-1 rounded-full text-sm border ${
                       active ? "bg-accent text-accent-foreground" : "bg-background"
                     }`}
