@@ -69,9 +69,53 @@ serve(async (req) => {
       const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
       const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-      // You can add subscription tracking logic here
-      console.log(`Updating subscription for user ${user_id} to plan ${plan_name}`);
+      // Calculate subscription end date (1 month from now)
+      const subscriptionEndsAt = new Date();
+      subscriptionEndsAt.setMonth(subscriptionEndsAt.getMonth() + 1);
+
+      // Update subscription to active status
+      const { error: subError } = await supabase
+        .from('subscriptions')
+        .update({
+          plan_name: plan_name,
+          status: 'active',
+          subscription_starts_at: new Date().toISOString(),
+          subscription_ends_at: subscriptionEndsAt.toISOString(),
+          trial_ends_at: null, // End trial when payment is made
+          razorpay_payment_id: razorpay_payment_id,
+          razorpay_order_id: razorpay_order_id,
+          amount_paid: await getAmountFromOrder(razorpay_order_id),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('user_id', user_id);
+
+      if (subError) {
+        console.error('Error updating subscription:', subError);
+      } else {
+        console.log(`Subscription updated for user ${user_id} to plan ${plan_name}`);
+      }
     }
+
+async function getAmountFromOrder(orderId: string): Promise<number | null> {
+  try {
+    const RAZORPAY_KEY_ID = Deno.env.get('RAZORPAY_KEY_ID');
+    const RAZORPAY_KEY_SECRET = Deno.env.get('RAZORPAY_KEY_SECRET');
+    
+    const response = await fetch(`https://api.razorpay.com/v1/orders/${orderId}`, {
+      headers: {
+        'Authorization': 'Basic ' + btoa(`${RAZORPAY_KEY_ID}:${RAZORPAY_KEY_SECRET}`),
+      },
+    });
+    
+    if (response.ok) {
+      const order = await response.json();
+      return order.amount / 100; // Convert from paise to rupees
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
 
     return new Response(
       JSON.stringify({ 

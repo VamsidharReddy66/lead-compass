@@ -249,6 +249,51 @@ export type Database = {
           },
         ]
       }
+      subscriptions: {
+        Row: {
+          amount_paid: number | null
+          created_at: string
+          id: string
+          plan_name: string
+          razorpay_order_id: string | null
+          razorpay_payment_id: string | null
+          status: string
+          subscription_ends_at: string | null
+          subscription_starts_at: string | null
+          trial_ends_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_paid?: number | null
+          created_at?: string
+          id?: string
+          plan_name?: string
+          razorpay_order_id?: string | null
+          razorpay_payment_id?: string | null
+          status?: string
+          subscription_ends_at?: string | null
+          subscription_starts_at?: string | null
+          trial_ends_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount_paid?: number | null
+          created_at?: string
+          id?: string
+          plan_name?: string
+          razorpay_order_id?: string | null
+          razorpay_payment_id?: string | null
+          status?: string
+          subscription_ends_at?: string | null
+          subscription_starts_at?: string | null
+          trial_ends_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
