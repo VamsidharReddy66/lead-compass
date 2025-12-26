@@ -73,10 +73,13 @@ serve(async (req) => {
       const subscriptionEndsAt = new Date();
       subscriptionEndsAt.setMonth(subscriptionEndsAt.getMonth() + 1);
 
-      // Update subscription to active status
+      const amount = await getAmountFromOrder(razorpay_order_id);
+
+      // Use upsert to handle both new and existing subscriptions
       const { error: subError } = await supabase
         .from('subscriptions')
-        .update({
+        .upsert({
+          user_id: user_id,
           plan_name: plan_name,
           status: 'active',
           subscription_starts_at: new Date().toISOString(),
@@ -84,15 +87,16 @@ serve(async (req) => {
           trial_ends_at: null, // End trial when payment is made
           razorpay_payment_id: razorpay_payment_id,
           razorpay_order_id: razorpay_order_id,
-          amount_paid: await getAmountFromOrder(razorpay_order_id),
+          amount_paid: amount,
           updated_at: new Date().toISOString(),
-        })
-        .eq('user_id', user_id);
+        }, {
+          onConflict: 'user_id'
+        });
 
       if (subError) {
-        console.error('Error updating subscription:', subError);
+        console.error('Error upserting subscription:', subError);
       } else {
-        console.log(`Subscription updated for user ${user_id} to plan ${plan_name}`);
+        console.log(`Subscription created/updated for user ${user_id} to plan ${plan_name}`);
       }
     }
 
