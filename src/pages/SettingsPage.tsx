@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/hooks/useAuth';
 import { useRazorpay } from '@/hooks/useRazorpay';
+import { useSubscription } from '@/hooks/useSubscription';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import {
@@ -36,6 +37,7 @@ import { Badge } from '@/components/ui/badge';
 const SettingsPage = () => {
   const { profile, user } = useAuth();
   const { initiatePayment, isLoading: isPaymentLoading } = useRazorpay();
+  const { subscription, isTrialActive, isSubscriptionActive, daysRemaining, refetch: refetchSubscription } = useSubscription();
   const [isLoading, setIsLoading] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -589,23 +591,65 @@ const SettingsPage = () => {
                   <div>
                     <CardTitle className="text-sm flex items-center gap-2">
                       Current Plan
-                      <Badge variant="secondary" className="bg-muted text-xs">Free Trial</Badge>
+                      <Badge 
+                        variant="secondary" 
+                        className={`text-xs ${
+                          isSubscriptionActive 
+                            ? 'bg-status-closed/20 text-status-closed' 
+                            : isTrialActive 
+                              ? 'bg-amber-500/20 text-amber-600' 
+                              : 'bg-destructive/20 text-destructive'
+                        }`}
+                      >
+                        {isSubscriptionActive 
+                          ? subscription?.plan_name 
+                          : isTrialActive 
+                            ? 'Free Trial' 
+                            : 'Expired'}
+                      </Badge>
                     </CardTitle>
                   </div>
                   <div className="text-right">
-                    <p className="text-xl font-bold text-foreground">₹0</p>
-                    <p className="text-xs text-muted-foreground">14 days left</p>
+                    <p className="text-xl font-bold text-foreground">
+                      {isSubscriptionActive 
+                        ? `₹${subscription?.amount_paid || 0}` 
+                        : '₹0'}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {daysRemaining > 0 
+                        ? `${daysRemaining} days left` 
+                        : 'No active subscription'}
+                    </p>
                   </div>
                 </div>
               </CardHeader>
               <CardContent className="p-4 pt-2">
-                <div className="flex items-center gap-3 p-3 bg-accent/10 rounded-lg border border-accent/20">
-                  <Zap className="w-5 h-5 text-accent" />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-foreground">Upgrade to unlock all features</p>
-                    <p className="text-xs text-muted-foreground">Unlimited leads, priority support</p>
+                {!isSubscriptionActive && (
+                  <div className="flex items-center gap-3 p-3 bg-accent/10 rounded-lg border border-accent/20">
+                    <Zap className="w-5 h-5 text-accent" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-foreground">
+                        {isTrialActive ? 'Upgrade to unlock all features' : 'Subscribe to continue'}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {isTrialActive 
+                          ? 'Unlimited leads, priority support' 
+                          : 'Your trial has expired. Choose a plan to continue.'}
+                      </p>
+                    </div>
                   </div>
-                </div>
+                )}
+                {isSubscriptionActive && (
+                  <div className="flex items-center gap-3 p-3 bg-status-closed/10 rounded-lg border border-status-closed/20">
+                    <CheckCircle className="w-5 h-5 text-status-closed" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-foreground">You're subscribed!</p>
+                      <p className="text-xs text-muted-foreground">
+                        Enjoying {subscription?.plan_name} plan benefits
+                      </p>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -628,18 +672,20 @@ const SettingsPage = () => {
                     ))}
                   </ul>
                   <Button 
-                    variant="outline" 
+                    variant={subscription?.plan_name === 'Starter' && isSubscriptionActive ? 'secondary' : 'outline'}
                     size="sm" 
                     className="w-full h-8 text-xs"
-                    disabled={isPaymentLoading}
+                    disabled={isPaymentLoading || (subscription?.plan_name === 'Starter' && isSubscriptionActive)}
                     onClick={() => initiatePayment({
                       amount: 499,
                       planName: 'Starter',
                       userId: user?.id,
+                      refetchSubscription,
                       onSuccess: () => toast.success('Subscribed to Starter plan!'),
                     })}
                   >
-                    {isPaymentLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Choose'}
+                    {isPaymentLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : 
+                      subscription?.plan_name === 'Starter' && isSubscriptionActive ? 'Current Plan' : 'Choose'}
                   </Button>
                 </CardContent>
               </Card>
@@ -668,17 +714,20 @@ const SettingsPage = () => {
                     ))}
                   </ul>
                   <Button 
+                    variant={subscription?.plan_name === 'Professional' && isSubscriptionActive ? 'secondary' : 'default'}
                     size="sm" 
                     className="w-full h-8 text-xs"
-                    disabled={isPaymentLoading}
+                    disabled={isPaymentLoading || (subscription?.plan_name === 'Professional' && isSubscriptionActive)}
                     onClick={() => initiatePayment({
                       amount: 999,
                       planName: 'Professional',
                       userId: user?.id,
+                      refetchSubscription,
                       onSuccess: () => toast.success('Subscribed to Professional plan!'),
                     })}
                   >
-                    {isPaymentLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Choose'}
+                    {isPaymentLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : 
+                      subscription?.plan_name === 'Professional' && isSubscriptionActive ? 'Current Plan' : 'Choose'}
                   </Button>
                 </CardContent>
               </Card>
@@ -701,18 +750,20 @@ const SettingsPage = () => {
                     ))}
                   </ul>
                   <Button 
-                    variant="outline" 
+                    variant={subscription?.plan_name === 'Enterprise' && isSubscriptionActive ? 'secondary' : 'outline'}
                     size="sm" 
                     className="w-full h-8 text-xs"
-                    disabled={isPaymentLoading}
+                    disabled={isPaymentLoading || (subscription?.plan_name === 'Enterprise' && isSubscriptionActive)}
                     onClick={() => initiatePayment({
                       amount: 2499,
                       planName: 'Enterprise',
                       userId: user?.id,
+                      refetchSubscription,
                       onSuccess: () => toast.success('Subscribed to Enterprise plan!'),
                     })}
                   >
-                    {isPaymentLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Choose'}
+                    {isPaymentLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : 
+                      subscription?.plan_name === 'Enterprise' && isSubscriptionActive ? 'Current Plan' : 'Choose'}
                   </Button>
                 </CardContent>
               </Card>

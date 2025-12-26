@@ -8,6 +8,7 @@ interface RazorpayOptions {
   userId?: string;
   onSuccess?: (paymentId: string) => void;
   onError?: (error: string) => void;
+  refetchSubscription?: () => void;
 }
 
 declare global {
@@ -94,6 +95,8 @@ export const useRazorpay = () => {
               description: `You have successfully subscribed to the ${options.planName} plan.`,
             });
 
+            // Refetch subscription to update UI
+            options.refetchSubscription?.();
             options.onSuccess?.(response.razorpay_payment_id);
           } catch (error: any) {
             toast({
