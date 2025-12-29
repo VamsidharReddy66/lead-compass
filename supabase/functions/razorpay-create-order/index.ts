@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,11 +13,55 @@ serve(async (req) => {
   }
 
   try {
-    const { amount, currency = 'INR', plan_name, user_id } = await req.json();
+    // Authenticate the user from Authorization header
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      console.error('No authorization header provided');
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized - No authorization header' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Initialize Supabase client to verify the JWT
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } }
+    });
+
+    // Get authenticated user
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      console.error('Authentication failed:', authError?.message);
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized - Invalid token' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log('Authenticated user:', user.id);
+
+    const { amount, currency = 'INR', plan_name } = await req.json();
 
     if (!amount || !plan_name) {
       return new Response(
         JSON.stringify({ error: 'Amount and plan_name are required' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validate input lengths
+    if (typeof plan_name !== 'string' || plan_name.length > 100) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid plan_name' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (typeof amount !== 'number' || amount <= 0 || amount > 1000000) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid amount' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -32,7 +77,7 @@ serve(async (req) => {
       );
     }
 
-    // Create order using Razorpay API
+    // Create order using Razorpay API - use authenticated user.id
     const auth = btoa(`${RAZORPAY_KEY_ID}:${RAZORPAY_KEY_SECRET}`);
     
     const orderResponse = await fetch('https://api.razorpay.com/v1/orders', {
@@ -42,12 +87,12 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        amount: amount * 100, // Razorpay expects amount in paise
+        amount: Math.round(amount * 100), // Razorpay expects amount in paise
         currency,
         receipt: `receipt_${Date.now()}`,
         notes: {
           plan_name,
-          user_id: user_id || 'anonymous',
+          user_id: user.id, // Use authenticated user ID
         },
       }),
     });
@@ -62,7 +107,7 @@ serve(async (req) => {
     }
 
     const order = await orderResponse.json();
-    console.log('Razorpay order created:', order.id);
+    console.log('Razorpay order created for user', user.id, ':', order.id);
 
     return new Response(
       JSON.stringify({
