@@ -46,14 +46,14 @@ export const useRazorpay = () => {
         throw new Error('Failed to load Razorpay SDK');
       }
 
-      // Create order
+      // Create order - user_id is derived from auth header on server side for security
       const { data: orderData, error: orderError } = await supabase.functions.invoke(
         'razorpay-create-order',
         {
           body: {
             amount: options.amount,
             plan_name: options.planName,
-            user_id: options.userId,
+            // Note: user_id is NOT sent - derived from JWT on server for security
           },
         }
       );
@@ -72,7 +72,7 @@ export const useRazorpay = () => {
         description: `${options.planName} Plan Subscription`,
         handler: async (response: any) => {
           try {
-            // Verify payment
+            // Verify payment - user_id is derived from auth header on server side for security
             const { data: verifyData, error: verifyError } = await supabase.functions.invoke(
               'razorpay-verify-payment',
               {
@@ -80,8 +80,8 @@ export const useRazorpay = () => {
                   razorpay_order_id: response.razorpay_order_id,
                   razorpay_payment_id: response.razorpay_payment_id,
                   razorpay_signature: response.razorpay_signature,
-                  user_id: options.userId,
                   plan_name: options.planName,
+                  // Note: user_id is NOT sent - derived from JWT on server for security
                 },
               }
             );
