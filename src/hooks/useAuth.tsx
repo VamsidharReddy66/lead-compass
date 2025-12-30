@@ -43,6 +43,8 @@ interface AuthContextType {
     email: string,
     password: string
   ) => Promise<{ error: Error | null }>;
+  signInWithPhone: (phone: string) => Promise<{ error: Error | null }>;
+  verifyPhoneOtp: (phone: string, token: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -182,13 +184,47 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   /**
-   * SIGN IN
+   * SIGN IN WITH EMAIL/PASSWORD
    */
   const signIn = async (email: string, password: string) => {
     try {
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
+      });
+
+      if (error) throw error;
+      return { error: null };
+    } catch (error) {
+      return { error: error as Error };
+    }
+  };
+
+  /**
+   * SIGN IN WITH PHONE (OTP)
+   */
+  const signInWithPhone = async (phone: string) => {
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        phone,
+      });
+
+      if (error) throw error;
+      return { error: null };
+    } catch (error) {
+      return { error: error as Error };
+    }
+  };
+
+  /**
+   * VERIFY PHONE OTP
+   */
+  const verifyPhoneOtp = async (phone: string, token: string) => {
+    try {
+      const { error } = await supabase.auth.verifyOtp({
+        phone,
+        token,
+        type: 'sms',
       });
 
       if (error) throw error;
@@ -222,6 +258,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         loading,
         signUp,
         signIn,
+        signInWithPhone,
+        verifyPhoneOtp,
         signOut,
       }}
     >
