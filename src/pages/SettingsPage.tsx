@@ -11,6 +11,7 @@ import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/hooks/useAuth';
 import { useRazorpay } from '@/hooks/useRazorpay';
 import { useSubscription } from '@/hooks/useSubscription';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import {
@@ -38,6 +39,7 @@ const SettingsPage = () => {
   const { profile, user } = useAuth();
   const { initiatePayment, isLoading: isPaymentLoading } = useRazorpay();
   const { subscription, isTrialActive, isSubscriptionActive, daysRemaining, refetch: refetchSubscription } = useSubscription();
+  const { isEnabled: pushEnabled, isSupported: pushSupported, togglePushNotifications } = usePushNotifications();
   const [isLoading, setIsLoading] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -84,7 +86,6 @@ const SettingsPage = () => {
   // Settings toggles
   const [biometricEnabled, setBiometricEnabled] = useState(false);
   const [emailNotifications, setEmailNotifications] = useState(true);
-  const [pushNotifications, setPushNotifications] = useState(true);
   const [smsNotifications, setSmsNotifications] = useState(false);
   const [twoFactorAuth, setTwoFactorAuth] = useState(false);
   const [loginAlerts, setLoginAlerts] = useState(true);
@@ -974,13 +975,15 @@ const SettingsPage = () => {
                 <div className="flex items-center justify-between py-1">
                   <div>
                     <p className="text-sm font-medium">Push</p>
-                    <p className="text-xs text-muted-foreground">Device notifications</p>
+                    <p className="text-xs text-muted-foreground">
+                      {pushSupported ? 'Device notifications' : 'Not supported in this browser'}
+                    </p>
                   </div>
                   <Switch
-                    checked={pushNotifications}
-                    onCheckedChange={(checked) => {
-                      setPushNotifications(checked);
-                      toast.success(checked ? 'Enabled' : 'Disabled');
+                    checked={pushEnabled}
+                    disabled={!pushSupported}
+                    onCheckedChange={async (checked) => {
+                      await togglePushNotifications(checked);
                     }}
                   />
                 </div>
