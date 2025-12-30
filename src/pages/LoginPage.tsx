@@ -1,21 +1,22 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Building2, Phone, Lock, Eye, EyeOff, Loader2, ArrowLeft } from 'lucide-react';
+import { Building2, Phone, Lock, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 
 const LoginPage = () => {
   const navigate = useNavigate();
-  const { signInWithPhone, verifyPhoneOtp, user, loading: authLoading, signOut } = useAuth();
+  const { signInWithPhone, user, loading: authLoading, signOut } = useAuth();
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [step, setStep] = useState<'phone' | 'otp'>('phone');
-  const [phone, setPhone] = useState('');
-  const [otp, setOtp] = useState('');
+  const [formData, setFormData] = useState({
+    phone: '',
+    password: '',
+  });
 
   // Redirect if already logged in
   useEffect(() => {
@@ -31,48 +32,20 @@ const LoginPage = () => {
     return digits.slice(0, 10);
   };
 
-  const getFullPhoneNumber = () => {
-    // Add India country code
-    return `+91${phone}`;
-  };
-
-  const handleSendOtp = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (phone.length !== 10) {
+    if (formData.phone.length !== 10) {
       toast.error('Please enter a valid 10-digit mobile number');
       return;
     }
 
     setIsLoading(true);
     
-    const { error } = await signInWithPhone(getFullPhoneNumber());
+    const { error } = await signInWithPhone(formData.phone, formData.password);
     
     if (error) {
-      toast.error(error.message || 'Failed to send OTP');
-      setIsLoading(false);
-      return;
-    }
-
-    toast.success('OTP sent to your mobile number');
-    setStep('otp');
-    setIsLoading(false);
-  };
-
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (otp.length !== 6) {
-      toast.error('Please enter the 6-digit OTP');
-      return;
-    }
-
-    setIsLoading(true);
-    
-    const { error } = await verifyPhoneOtp(getFullPhoneNumber(), otp);
-    
-    if (error) {
-      toast.error(error.message || 'Invalid OTP');
+      toast.error(error.message || 'Invalid mobile number or password');
       setIsLoading(false);
       return;
     }
@@ -96,11 +69,6 @@ const LoginPage = () => {
 
     toast.success('Welcome back!');
     // Navigation will be handled by useEffect
-  };
-
-  const handleBack = () => {
-    setStep('phone');
-    setOtp('');
   };
 
   if (authLoading) {
@@ -141,83 +109,61 @@ const LoginPage = () => {
             <p className="text-muted-foreground">Sign in to continue managing your leads</p>
           </div>
 
-          {step === 'phone' ? (
-            <form onSubmit={handleSendOtp} className="space-y-4 lg:space-y-5">
-              <div className="space-y-2">
-                <Label htmlFor="phone" className="text-sm">Mobile Number</Label>
-                <div className="relative flex">
-                  <div className="flex items-center justify-center px-3 bg-muted border border-r-0 border-input rounded-l-md text-sm text-muted-foreground">
-                    +91
-                  </div>
-                  <div className="relative flex-1">
-                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 lg:w-5 lg:h-5 text-muted-foreground" />
-                    <Input
-                      id="phone"
-                      type="tel"
-                      placeholder="9876543210"
-                      className="pl-10 h-11 lg:h-12 text-sm lg:text-base rounded-l-none"
-                      value={phone}
-                      onChange={(e) => setPhone(formatPhoneNumber(e.target.value))}
-                      required
-                      maxLength={10}
-                    />
-                  </div>
+          <form onSubmit={handleSubmit} className="space-y-4 lg:space-y-5">
+            <div className="space-y-2">
+              <Label htmlFor="phone" className="text-sm">Mobile Number</Label>
+              <div className="relative flex">
+                <div className="flex items-center justify-center px-3 bg-muted border border-r-0 border-input rounded-l-md text-sm text-muted-foreground">
+                  +91
                 </div>
-                <p className="text-xs text-muted-foreground">We'll send you a one-time password</p>
-              </div>
-
-              <Button type="submit" variant="accent" className="w-full h-11 lg:h-12 text-sm lg:text-base" disabled={isLoading}>
-                {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Send OTP'}
-              </Button>
-            </form>
-          ) : (
-            <form onSubmit={handleVerifyOtp} className="space-y-4 lg:space-y-5">
-              <button
-                type="button"
-                onClick={handleBack}
-                className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors mb-2"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                Change number
-              </button>
-
-              <div className="space-y-2">
-                <Label className="text-sm">Enter OTP</Label>
-                <p className="text-xs text-muted-foreground mb-3">
-                  We've sent a 6-digit code to +91 {phone}
-                </p>
-                <div className="flex justify-center">
-                  <InputOTP
-                    value={otp}
-                    onChange={setOtp}
-                    maxLength={6}
-                  >
-                    <InputOTPGroup>
-                      <InputOTPSlot index={0} />
-                      <InputOTPSlot index={1} />
-                      <InputOTPSlot index={2} />
-                      <InputOTPSlot index={3} />
-                      <InputOTPSlot index={4} />
-                      <InputOTPSlot index={5} />
-                    </InputOTPGroup>
-                  </InputOTP>
+                <div className="relative flex-1">
+                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 lg:w-5 lg:h-5 text-muted-foreground" />
+                  <Input
+                    id="phone"
+                    type="tel"
+                    placeholder="9876543210"
+                    className="pl-10 h-11 lg:h-12 text-sm lg:text-base rounded-l-none"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: formatPhoneNumber(e.target.value) })}
+                    required
+                    maxLength={10}
+                  />
                 </div>
               </div>
+            </div>
 
-              <Button type="submit" variant="accent" className="w-full h-11 lg:h-12 text-sm lg:text-base" disabled={isLoading}>
-                {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Verify & Sign In'}
-              </Button>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password" className="text-sm">Password</Label>
+                <Link to="/forgot-password" className="text-xs lg:text-sm text-accent hover:underline">
+                  Forgot password?
+                </Link>
+              </div>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 lg:w-5 lg:h-5 text-muted-foreground" />
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="••••••••"
+                  className="pl-10 pr-10 h-11 lg:h-12 text-sm lg:text-base"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4 lg:w-5 lg:h-5" /> : <Eye className="w-4 h-4 lg:w-5 lg:h-5" />}
+                </button>
+              </div>
+            </div>
 
-              <button
-                type="button"
-                onClick={handleSendOtp}
-                className="w-full text-center text-sm text-accent hover:underline"
-                disabled={isLoading}
-              >
-                Resend OTP
-              </button>
-            </form>
-          )}
+            <Button type="submit" variant="accent" className="w-full h-11 lg:h-12 text-sm lg:text-base" disabled={isLoading}>
+              {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Sign In'}
+            </Button>
+          </form>
 
           <p className="text-center text-muted-foreground mt-6 text-sm">
             Don't have an account?{' '}

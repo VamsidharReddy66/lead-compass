@@ -43,8 +43,10 @@ interface AuthContextType {
     email: string,
     password: string
   ) => Promise<{ error: Error | null }>;
-  signInWithPhone: (phone: string) => Promise<{ error: Error | null }>;
-  verifyPhoneOtp: (phone: string, token: string) => Promise<{ error: Error | null }>;
+  signInWithPhone: (
+    phone: string,
+    password: string
+  ) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -201,30 +203,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   /**
-   * SIGN IN WITH PHONE (OTP)
+   * SIGN IN WITH PHONE + PASSWORD
+   * Looks up email by phone, then signs in with email/password
    */
-  const signInWithPhone = async (phone: string) => {
+  const signInWithPhone = async (phone: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signInWithOtp({
-        phone,
-      });
+      // Format phone for lookup (add +91 if not present)
+      const formattedPhone = phone.startsWith('+') ? phone : `+91${phone}`;
+      
+      // Look up email by phone number from profiles
+      const { data: profile, error: lookupError } = await supabase
+        .from('profiles')
+        .select('email')
+        .eq('phone', formattedPhone)
+        .maybeSingle();
 
-      if (error) throw error;
-      return { error: null };
-    } catch (error) {
-      return { error: error as Error };
-    }
-  };
+      if (lookupError) throw lookupError;
+      
+      if (!profile?.email) {
+        throw new Error('No account found with this mobile number');
+      }
 
-  /**
-   * VERIFY PHONE OTP
-   */
-  const verifyPhoneOtp = async (phone: string, token: string) => {
-    try {
-      const { error } = await supabase.auth.verifyOtp({
-        phone,
-        token,
-        type: 'sms',
+      // Sign in with the found email
+      const { error } = await supabase.auth.signInWithPassword({
+        email: profile.email,
+        password,
       });
 
       if (error) throw error;
@@ -259,7 +262,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         signUp,
         signIn,
         signInWithPhone,
-        verifyPhoneOtp,
         signOut,
       }}
     >
