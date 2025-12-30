@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Building2, Phone, Lock, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Building2, Mail, Lock, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,42 +10,30 @@ import { supabase } from '@/integrations/supabase/client';
 
 const LoginPage = () => {
   const navigate = useNavigate();
-  const { signInWithPhone, user, loading: authLoading, signOut } = useAuth();
+  const { signIn, user, loading: authLoading, signOut } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
-    phone: '',
+    email: '',
     password: '',
   });
 
   // Redirect if already logged in
   useEffect(() => {
-    if (!authLoading && user) {
-      navigate('/dashboard', { replace: true });
-    }
-  }, [user, authLoading, navigate]);
+  if (!authLoading && user) {
+    navigate('/dashboard', { replace: true });
+  }
+}, [user, authLoading, navigate]);
 
-  const formatPhoneNumber = (value: string) => {
-    // Remove all non-digits
-    const digits = value.replace(/\D/g, '');
-    // Limit to 10 digits
-    return digits.slice(0, 10);
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (formData.phone.length !== 10) {
-      toast.error('Please enter a valid 10-digit mobile number');
-      return;
-    }
-
     setIsLoading(true);
     
-    const { error } = await signInWithPhone(formData.phone, formData.password);
+    const { error } = await signIn(formData.email, formData.password);
     
     if (error) {
-      toast.error(error.message || 'Invalid mobile number or password');
+      toast.error(error.message || 'Invalid email or password');
       setIsLoading(false);
       return;
     }
@@ -111,24 +99,18 @@ const LoginPage = () => {
 
           <form onSubmit={handleSubmit} className="space-y-4 lg:space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="phone" className="text-sm">Mobile Number</Label>
-              <div className="relative flex">
-                <div className="flex items-center justify-center px-3 bg-muted border border-r-0 border-input rounded-l-md text-sm text-muted-foreground">
-                  +91
-                </div>
-                <div className="relative flex-1">
-                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 lg:w-5 lg:h-5 text-muted-foreground" />
-                  <Input
-                    id="phone"
-                    type="tel"
-                    placeholder="9876543210"
-                    className="pl-10 h-11 lg:h-12 text-sm lg:text-base rounded-l-none"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: formatPhoneNumber(e.target.value) })}
-                    required
-                    maxLength={10}
-                  />
-                </div>
+              <Label htmlFor="email" className="text-sm">Email</Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 lg:w-5 lg:h-5 text-muted-foreground" />
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="you@company.com"
+                  className="pl-10 h-11 lg:h-12 text-sm lg:text-base"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  required
+                />
               </div>
             </div>
 
