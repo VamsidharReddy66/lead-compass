@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
@@ -24,11 +24,25 @@ const getActivityTitle = (activityType: string): string => {
   }
 };
 
+const getMeetingTypeLabel = (type: string): string => {
+  switch (type) {
+    case 'site-visit': return 'Site Visit';
+    case 'follow-up': return 'Follow-up';
+    case 'call': return 'Call';
+    case 'meeting': return 'Meeting';
+    default: return 'Meeting';
+  }
+};
+
+const REMINDER_MINUTES = 15; // Notify 15 minutes before
+
 export const usePushNotifications = () => {
   const { user } = useAuth();
   const [isEnabled, setIsEnabled] = useState(false);
   const [permission, setPermission] = useState<NotificationPermission>('default');
   const [isSupported, setIsSupported] = useState(false);
+  const notifiedMeetingsRef = useRef<Set<string>>(new Set());
+  const reminderIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Check browser support and current permission
   useEffect(() => {
@@ -55,7 +69,6 @@ export const usePushNotifications = () => {
       
       if (result === 'granted') {
         toast.success('Push notifications enabled');
-        // Send a test notification
         new Notification('Notifications Enabled', {
           body: 'You will now receive push notifications for important updates.',
           icon: '/favicon.ico',
@@ -101,6 +114,84 @@ export const usePushNotifications = () => {
     }
   }, [isEnabled, permission]);
 
+  // Check for upcoming meetings and send reminders
+  const checkUpcomingMeetings = useCallback(async () => {
+    if (!user || !isEnabled || permission !== 'granted') return;
+
+    try {
+      const now = new Date();
+      const reminderWindow = new Date(now.getTime() + REMINDER_MINUTES * 60 * 1000);
+
+      const { data: meetings, error } = await supabase
+        .from('meetings')
+        .select('id, title, meeting_type, scheduled_at, location')
+        .eq('status', 'scheduled')
+        .gte('scheduled_at', now.toISOString())
+        .lte('scheduled_at', reminderWindow.toISOString());
+
+      if (error) {
+        console.error('Error fetching upcoming meetings:', error);
+        return;
+      }
+
+      meetings?.forEach((meeting) => {
+        const meetingKey = `${meeting.id}-reminder`;
+        
+        // Skip if already notified
+        if (notifiedMeetingsRef.current.has(meetingKey)) return;
+        
+        const scheduledTime = new Date(meeting.scheduled_at);
+        const minutesUntil = Math.round((scheduledTime.getTime() - now.getTime()) / 60000);
+        
+        // Only notify if within reminder window
+        if (minutesUntil <= REMINDER_MINUTES && minutesUntil > 0) {
+          notifiedMeetingsRef.current.add(meetingKey);
+          
+          const typeLabel = getMeetingTypeLabel(meeting.meeting_type);
+          const timeStr = scheduledTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          
+          sendNotification(`⏰ ${typeLabel} in ${minutesUntil} min`, {
+            body: `${meeting.title} at ${timeStr}${meeting.location ? ` - ${meeting.location}` : ''}`,
+            tag: meetingKey,
+            requireInteraction: true,
+          });
+        }
+      });
+
+      // Clean up old entries (keep last 50)
+      if (notifiedMeetingsRef.current.size > 50) {
+        const entries = Array.from(notifiedMeetingsRef.current);
+        entries.slice(0, entries.length - 50).forEach(id => notifiedMeetingsRef.current.delete(id));
+      }
+    } catch (error) {
+      console.error('Error checking upcoming meetings:', error);
+    }
+  }, [user, isEnabled, permission, sendNotification]);
+
+  // Set up meeting reminder interval
+  useEffect(() => {
+    if (!user || !isEnabled || permission !== 'granted') {
+      if (reminderIntervalRef.current) {
+        clearInterval(reminderIntervalRef.current);
+        reminderIntervalRef.current = null;
+      }
+      return;
+    }
+
+    // Check immediately on mount
+    checkUpcomingMeetings();
+
+    // Then check every minute
+    reminderIntervalRef.current = setInterval(checkUpcomingMeetings, 60000);
+
+    return () => {
+      if (reminderIntervalRef.current) {
+        clearInterval(reminderIntervalRef.current);
+        reminderIntervalRef.current = null;
+      }
+    };
+  }, [user, isEnabled, permission, checkUpcomingMeetings]);
+
   // Subscribe to realtime activities and send push notifications
   useEffect(() => {
     if (!user || !isEnabled || permission !== 'granted') return;
@@ -119,11 +210,9 @@ export const usePushNotifications = () => {
         (payload) => {
           const activity = payload.new as { id: string; activity_type: string; description: string };
           
-          // Prevent duplicate notifications
           if (notifiedIds.has(activity.id)) return;
           notifiedIds.add(activity.id);
 
-          // Limit set size
           if (notifiedIds.size > 100) {
             const first = notifiedIds.values().next().value;
             if (first) notifiedIds.delete(first);
@@ -132,7 +221,7 @@ export const usePushNotifications = () => {
           const title = getActivityTitle(activity.activity_type);
           sendNotification(title, {
             body: activity.description,
-            tag: activity.id, // Prevents duplicate system notifications
+            tag: activity.id,
           });
         }
       )
